@@ -1,0 +1,23 @@
+[Unit]
+Description=Feed -> MySQL bridge (BetGate feed materializer)
+Documentation=file:///opt/feed-mysql-bridge/DEPLOYMENT.md
+After=network-online.target mysql.service mariadb.service
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/feed-mysql-bridge
+# --listen: БЕЗ снапшота и очистки БД. Рестарт сервиса НЕ затирает результаты исходов,
+# пришедшие по AMQP (в Redis-снапшоте их нет). Снапшот делается один раз при первичной
+# загрузке пустой БД вручную: python3 bridge.py --snapshot. См. DEPLOYMENT.md.
+ExecStart=/usr/bin/python3 /opt/feed-mysql-bridge/bridge.py --listen
+Restart=always
+RestartSec=5
+User=root
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=feed-bridge
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,25 @@
+{
+    "redis": {
+        "host": "<redis-host>",
+        "port": 16380,
+        "password": "<redis-password>",
+        "db": 0
+    },
+    "rabbitmq": {
+        "host": "<rabbitmq-host>",
+        "port": 5672,
+        "username": "<rabbitmq-username>",
+        "password": "<rabbitmq-password>",
+        "vhost": "/",
+        "queue": "<your-queue-name>",
+        "management_url": "http://<rabbitmq-host>:15672"
+    },
+    "mysql": {
+        "host": "127.0.0.1",
+        "port": 3306,
+        "user": "<mysql-user>",
+        "password": "<mysql-password>",
+        "database": "feed_bridge",
+        "charset": "utf8mb4"
+    }
+}
