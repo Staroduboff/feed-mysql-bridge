@@ -1,0 +1,734 @@
+<style>
+  .viz-root{
+    color-scheme:light;
+    --plane:#f7f8f9; --surface:#fcfcfd; --surface-2:#f2f4f6;
+    --ink:#0c0e12; --ink-2:#4d5560; --muted:#8a929d;
+    --grid:#e6e9ee; --axis:#c4cad3; --border:rgba(12,14,18,.10);
+    --series:#2a78d6; --crit:#d03b3b; --crit-wash:rgba(208,59,59,.09); --crit-line:rgba(208,59,59,.5);
+    --good:#0ca30c; --warn:#c98500; --series2:#0d9488; --series3:#7c5cd6; --series4:#2f9e6b; --series5:#c74e78; --series6:#c2663d;
+    --shadow:0 1px 2px rgba(12,14,18,.05),0 12px 32px -14px rgba(12,14,18,.18);
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  }
+  @media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])) .viz-root{
+    color-scheme:dark; --plane:#0c0d0f; --surface:#16181c; --surface-2:#1d2025;
+    --ink:#f2f4f7; --ink-2:#b3bcc7; --muted:#7c8794; --grid:#24272d; --axis:#3a3f47; --border:rgba(255,255,255,.10);
+    --series:#3987e5; --crit:#e05656; --crit-wash:rgba(224,86,86,.12); --crit-line:rgba(224,86,86,.5);
+    --good:#22b322; --warn:#e0a53a; --series2:#22c1ae; --series3:#9d84e8; --series4:#35c187; --series5:#e2678f; --series6:#e0895c;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -18px rgba(0,0,0,.6);}}
+  :root[data-theme="dark"] .viz-root{
+    color-scheme:dark; --plane:#0c0d0f; --surface:#16181c; --surface-2:#1d2025;
+    --ink:#f2f4f7; --ink-2:#b3bcc7; --muted:#7c8794; --grid:#24272d; --axis:#3a3f47; --border:rgba(255,255,255,.10);
+    --series:#3987e5; --crit:#e05656; --crit-wash:rgba(224,86,86,.12); --crit-line:rgba(224,86,86,.5);
+    --good:#22b322; --warn:#e0a53a; --series2:#22c1ae; --series3:#9d84e8; --series4:#35c187; --series5:#e2678f; --series6:#e0895c;
+    --shadow:0 1px 2px rgba(0,0,0,.4),0 18px 40px -18px rgba(0,0,0,.6);}
+
+  .viz-root{background:var(--plane);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;
+    line-height:1.5;padding:32px 20px 44px;min-height:100vh;}
+  .wrap{max-width:1000px;margin:0 auto;}
+  .eyebrow{font-size:11.5px;font-weight:650;letter-spacing:.11em;text-transform:uppercase;color:var(--muted);
+    margin:0 0 10px;display:flex;gap:9px;align-items:center;flex-wrap:wrap;}
+  .live{display:inline-flex;align-items:center;gap:6px;color:var(--crit);font-weight:700;}
+  .live .dot{width:7px;height:7px;border-radius:50%;background:var(--crit);animation:pulse 1.8s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 color-mix(in srgb,var(--crit) 45%,transparent)}50%{opacity:.65;box-shadow:0 0 0 5px transparent}}
+  @media (prefers-reduced-motion:reduce){.live .dot{animation:none}}
+  .seg{margin-left:auto;display:inline-flex;background:var(--surface-2);border:1px solid var(--border);
+    border-radius:9px;padding:2px;gap:2px;}
+  .seg-btn{font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:0;text-transform:none;
+    color:var(--ink-2);background:transparent;border:0;border-radius:7px;padding:5px 12px;cursor:pointer;
+    line-height:1.1;transition:background .12s,color .12s;}
+  .seg-btn:hover{color:var(--ink);}
+  .seg-btn.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 2px rgba(12,14,18,.08);}
+  h1{font-size:clamp(21px,3.5vw,30px);line-height:1.15;font-weight:720;letter-spacing:-.02em;margin:0 0 10px;text-wrap:balance;max-width:26ch;}
+  .lede{font-size:15px;color:var(--ink-2);margin:0;max-width:72ch;}
+  .lede b{color:var(--ink);font-weight:640;}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:24px 0 20px;}
+  @media (max-width:640px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .tile{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:15px 16px;box-shadow:var(--shadow);}
+  .tile .k{font-size:10.5px;font-weight:640;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin:0 0 9px;}
+  .tile .v{font-size:25px;font-weight:730;letter-spacing:-.02em;font-variant-numeric:tabular-nums;line-height:1;}
+  .tile .v small{font-size:13px;font-weight:600;color:var(--ink-2);margin-left:3px;}
+  .tile .s{font-size:12px;color:var(--ink-2);margin-top:7px;}
+  .tile.crit .v{color:var(--crit);} .tile.accent .v{color:var(--series);} .tile.warn .v{color:var(--warn);} .tile.good .v{color:var(--good);}
+  .tile.verdict{border-width:2px;}
+  .tile.verdict.v0{border-color:color-mix(in srgb,var(--good) 55%,transparent);}
+  .tile.verdict.v1{border-color:color-mix(in srgb,var(--warn) 65%,transparent);}
+  .tile.verdict.v2{border-color:var(--crit);background:var(--crit-wash);}
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;box-shadow:var(--shadow);padding:20px 20px 8px;}
+  .card + .card{margin-top:20px;}
+  .card-head{display:flex;justify-content:space-between;align-items:baseline;gap:16px;flex-wrap:wrap;margin-bottom:4px;}
+  .card-head h2{font-size:15px;font-weight:670;margin:0;letter-spacing:-.01em;}
+  .legend{display:flex;gap:15px;flex-wrap:wrap;font-size:12px;color:var(--ink-2);}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .sw{display:inline-block;width:13px;height:11px;border-radius:3px;}
+  .sw.area{background:linear-gradient(color-mix(in srgb,var(--c) 22%,transparent),transparent);border-top:2px solid var(--c);}
+  .sw.line{height:0;border-top:2px solid var(--c);width:16px;border-radius:0;}
+  .sw.dash{height:0;border-top:2px dashed var(--c);width:16px;border-radius:0;}
+  .sw.bar{width:7px;height:12px;border-radius:2px;background:var(--c);opacity:.85;}
+  .sw.ev{width:9px;height:9px;border-radius:50%;background:var(--crit);}
+  /* свотчи графиков сервера — один в один с витриной ch-mem */
+  .sw.rss{height:11px;width:13px;border-radius:3px;background:linear-gradient(color-mix(in srgb,var(--series) 22%,transparent),transparent);border-top:2px solid var(--series);}
+  .sw.ceil{height:0;border-top:2px dashed var(--crit);width:16px;border-radius:0;}
+  .sw.area4{height:11px;width:13px;border-radius:3px;background:linear-gradient(color-mix(in srgb,var(--series4) 34%,transparent),transparent);border-top:2px solid var(--series4);}
+  .sw.area4sys{height:11px;width:13px;border-radius:3px;background:color-mix(in srgb,var(--series4) 16%,transparent);border-top:2px solid color-mix(in srgb,var(--series4) 50%,transparent);}
+  .sw.ldisk{height:0;border-top:2px solid var(--ink-2);width:16px;border-radius:0;} .sw.cap{height:0;border-top:2px dashed var(--crit);width:16px;border-radius:0;}
+  .sw.cpu-u{height:11px;width:13px;border-radius:3px;background:color-mix(in srgb,var(--series6) 55%,transparent);border-top:2px solid var(--series6);}
+  .sw.cpu-s{height:11px;width:13px;border-radius:3px;background:color-mix(in srgb,var(--series6) 26%,transparent);}
+  .sw.cpu-w{height:11px;width:13px;border-radius:3px;background:color-mix(in srgb,var(--crit) 45%,transparent);}
+  .sw.cpu-pk{height:0;border-top:2px dashed var(--ink-2);width:16px;border-radius:0;}
+  .sub{font-size:12.5px;color:var(--ink-2);margin:2px 0 12px;}
+  .cap{margin:4px 2px 12px;font-size:12.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;}
+  .chart-shell{position:relative;width:100%;overflow:visible;}
+  svg{display:block;width:100%;max-width:100%;height:auto;touch-action:none;}
+  .tt{position:absolute;pointer-events:none;opacity:0;transition:opacity .09s;background:var(--surface);
+    border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow);padding:8px 11px;font-size:12.5px;
+    color:var(--ink);min-width:120px;max-width:300px;z-index:5;font-variant-numeric:tabular-nums;}
+  .tt .tt-t{color:var(--muted);font-size:11px;margin-bottom:3px;} .tt .tt-v{font-weight:700;font-size:15px;}
+  .tt .tt-h{color:var(--ink-2);font-size:11.5px;margin-top:2px;} .tt.warn .tt-v{color:var(--crit);}
+
+  table.tbl{width:100%;border-collapse:collapse;font-size:12.5px;margin:0 0 10px;}
+  .tbl th{text-align:left;font-size:10.5px;font-weight:640;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);padding:5px 10px 5px 0;border-bottom:1px solid var(--border);}
+  .tbl td{padding:6px 10px 6px 0;border-bottom:1px solid var(--grid);vertical-align:top;font-variant-numeric:tabular-nums;}
+  .tbl td.mono{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:11.5px;color:var(--ink-2);}
+  .tbl td.num{text-align:right;} .tbl th.num{text-align:right;}
+  .tbl-scroll{overflow-x:auto;}
+  .bdg{display:inline-block;padding:1px 8px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.03em;}
+  .bdg.v0{background:color-mix(in srgb,var(--good) 16%,transparent);color:var(--good);}
+  .bdg.v1{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn);}
+  .bdg.v2{background:color-mix(in srgb,var(--crit) 14%,transparent);color:var(--crit);}
+  .bdg.k{background:var(--surface-2);color:var(--ink-2);border:1px solid var(--border);}
+  .okline{display:flex;align-items:center;gap:8px;font-size:13.5px;color:var(--ink-2);margin:2px 0 12px;}
+  .okline .dot{width:8px;height:8px;border-radius:50%;background:var(--good);flex:none;}
+  .okline.bad .dot{background:var(--crit);}
+  .note{margin:22px 0 0;background:var(--surface-2);border:1px solid var(--border);border-left:3px solid var(--warn);
+    border-radius:0 12px 12px 0;padding:15px 17px;font-size:13.5px;color:var(--ink-2);}
+  .note b{color:var(--ink);font-weight:640;} .note .row{margin:0 0 8px;} .note .row:last-child{margin:0;}
+  .foot{margin-top:20px;font-size:11.5px;color:var(--muted);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+  code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-size:.92em;background:var(--surface-2);
+    padding:1px 5px;border-radius:5px;color:var(--ink-2);}
+</style>
+
+<div class="viz-root"><div class="wrap">
+  <p class="eyebrow"><span class="live"><span class="dot"></span>LIVE</span>· тест-сервер *10 · feed-mysql-bridge → MySQL <span id="e-db">feed_bridge</span> · авто-обновление 1 мин
+    <span class="seg" role="group" aria-label="Период просмотра">
+      <button type="button" class="seg-btn" data-days="3">3 суток</button>
+      <button type="button" class="seg-btn" data-days="15">15 дней</button>
+    </span></p>
+  <h1>Здоровье feed-mysql-bridge</h1>
+  <p class="lede">Мост переносит спортивный фид из <b>Redis</b> (снимок линии) и <b>RabbitMQ</b> (поток изменений,
+   очередь <code id="e-queue">gt.external.alpha</code>) в MySQL <b>feed_bridge</b>. Над этой базой будет работать
+   WebSocket-сервер раздачи коэффициентов игрокам, поэтому здесь видно всё, от чего зависит её актуальность:
+   жив ли процесс, успевает ли он за очередью, пишет ли в базу прямо сейчас и совпадает ли картина с Redis.
+   Сверху вниз — <b>ресурсы сервера</b> (CPU, память, место на диске) в том же виде, что на витрине CH-архива,
+   затем <b>тракт бриджа</b> (поток, отставание, свежесть, сверка с Redis, вставки, ресурсы процесса) и очереди.
+   Данные снимаются каждую минуту; период (3 суток по минутам / 15 дней по 10 минут) переключается справа вверху.</p>
+
+  <div class="stats">
+    <div class="tile verdict" id="t-vd"><p class="k">Итог</p><div class="v" id="t-vd-v">—</div><p class="s" id="t-vd-s">—</p></div>
+    <div class="tile" id="t-svc"><p class="k">Сервис бриджа</p><div class="v" id="t-svc-v">—</div><p class="s" id="t-svc-s">—</p></div>
+    <div class="tile accent" id="t-lag"><p class="k">Отставание от очереди</p><div class="v" id="t-lag-v">—</div><p class="s" id="t-lag-s">—</p></div>
+    <div class="tile" id="t-gate"><p class="k">Приём ставок</p><div class="v" id="t-gate-v">—</div><p class="s" id="t-gate-s">—</p></div>
+    <div class="tile" id="t-flow"><p class="k">Поток сообщений</p><div class="v" id="t-flow-v">—</div><p class="s" id="t-flow-s">—</p></div>
+    <div class="tile" id="t-wage"><p class="k">Последняя запись в БД</p><div class="v" id="t-wage-v">—</div><p class="s" id="t-wage-s">—</p></div>
+    <div class="tile" id="t-live"><p class="k">Live-события БД / Redis</p><div class="v" id="t-live-v">—</div><p class="s" id="t-live-s">—</p></div>
+    <div class="tile" id="t-err"><p class="k">Ошибки за 24 ч</p><div class="v" id="t-err-v">—</div><p class="s" id="t-err-s">—</p></div>
+    <div class="tile" id="t-db"><p class="k">База и диск</p><div class="v" id="t-db-v">—</div><p class="s" id="t-db-s">—</p></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="strip-title">Вердикт по времени</h2>
+      <div class="legend"><span><i class="sw bar" style="--c:var(--good)"></i>OK</span><span><i class="sw bar" style="--c:var(--warn)"></i>WARN</span><span><i class="sw bar" style="--c:var(--crit)"></i>CRIT</span><span><i class="sw bar" style="--c:var(--axis)"></i>нет данных</span></div></div>
+    <p class="sub">Каждая минута окрашена вердиктом сборщика: <b>CRIT</b> — сервис не активен, MySQL недоступен, у очереди нет консьюмера, отставание ≥ <span id="thr-lagc">—</span> или записей в БД нет ≥ <span id="thr-wagec">—</span>; <b>WARN</b> — мягкие пороги, ошибки в журнале, рестарт, расхождение с Redis, heartbeat фида устарел. Наведите на полосу — причины.</p>
+    <div class="chart-shell">
+      <svg id="strip" viewBox="0 0 1000 40" preserveAspectRatio="none" role="img" aria-label="Вердикт по времени"></svg>
+      <div class="tt" id="tt-strip"></div></div>
+    <p class="cap" id="strip-cap">—</p>
+    <p class="okline" id="sweep"><span class="dot"></span><span>сборщик: данных нет</span></p>
+    <div id="events"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="cpu-title">Загрузка CPU сервера</h2>
+      <div class="legend"><span><i class="sw cpu-u"></i>user</span><span><i class="sw cpu-s"></i>system</span><span><i class="sw cpu-w"></i>iowait</span><span><i class="sw cpu-pk"></i>пик в окне</span></div></div>
+    <p class="sub">Загрузка CPU <b>всего сервера</b> (не только процесса бриджа) — по дельтам <code>/proc/stat</code> между сэмплами, доля от всех ядер. Залитый стек — <b>среднее</b> за окно с разбивкой user / system / <b>iowait</b> (рост iowait = упёрлись в диск, а не в счёт). Пунктир — <b>пик</b> внутри 10-мин окна (худшая минута; в 3-суточном режиме точки минутные и пик совпадает со средним): короткие всплески до 100% штатны, важна не «свеча», а полка. <code>loadavg</code> — в тултипе (может превышать 100%, это очередь, а не проценты).</p>
+    <div class="chart-shell">
+      <svg id="chart-cpu" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Загрузка CPU сервера во времени"></svg>
+      <div class="tt" id="tt-cpu"></div></div>
+    <p class="cap" id="cpu-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="mem-title">Память сервера — занято</h2>
+      <div class="legend"><span><i class="sw rss"></i>занято</span><span><i class="sw ceil"></i>потолок = RAM</span><span><i class="sw ev"></i>спайк ≥ 85%</span></div></div>
+    <p class="sub">Занятая память сервера целиком: <code>MemTotal − MemAvailable</code> из <code>/proc/meminfo</code>, то есть без page cache, который ядро отдаст по требованию. Потолок — вся оперативная память; swap на сервере нет, поэтому за потолком следует OOM-killer, а его первые кандидаты — MariaDB и бридж. RSS MariaDB и процесса бриджа — в тултипе.</p>
+    <div class="chart-shell">
+      <svg id="chart-mem" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Память сервера во времени"></svg>
+      <div class="tt" id="tt-mem"></div></div>
+    <p class="cap" id="mem-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="disk-title">Размер базы на диске</h2>
+      <div class="legend"><span><i class="sw area4"></i>feed_bridge</span><span><i class="sw area4sys"></i>остальное MariaDB</span><span><i class="sw ldisk"></i>диск занят</span><span><i class="sw cap"></i>ёмкость</span></div></div>
+    <p class="sub">Ось Y = <b>ёмкость диска</b>, чтобы было видно свободное место. Залитая область — база <code>feed_bridge</code> (данные + индексы); сверху тонким — остальной каталог MariaDB (другие базы, ibdata, redo-лог). Линия <b>«диск занят»</b> — весь сервер; промежуток от неё до потолка <b>«ёмкость»</b> = свободно. База растёт монотонно (строки не удаляются), следить нужно за запасом. Наведите — разбивка окна; <b>маркер прилипает к ближайшей линии</b>.</p>
+    <div class="chart-shell">
+      <svg id="chart-disk" viewBox="0 0 1000 340" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Размер базы на диске во времени"></svg>
+      <div class="tt" id="tt-disk"></div></div>
+    <p class="cap" id="disk-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="c0-title">Готовность приёма ставок</h2>
+      <div class="legend"><span><i class="sw area" style="--c:var(--series3)"></i>свежесть данных</span><span><i class="sw line" style="--c:var(--series2)"></i>тишина в потоке</span><span><i class="sw line" style="--c:var(--series6)"></i>heartbeat BetGate</span><span><i class="sw dash" style="--c:var(--warn)"></i>пороги</span><span><i class="sw ev"></i>приём закрыт</span></div></div>
+    <p class="sub">Сигналы гейта из <code>feedbridge/gate.py</code>: их считает сам мост раз в секунду, сборщик только снимает раз в минуту. <b>Свежесть данных</b> — <code>now − max(uts)</code> по применённым событиям и маркетам, то есть сквозное отставание от BetGate по всей цепочке, а не по последней очереди; на живом потоке это 0–1 с. <b>Тишина</b> — секунд с последнего применённого сообщения, срабатывает раньше, чем успевает вырасти свежесть. Исходы в метрике не участвуют: у них <code>uts</code> в перепродаваемом фиде не заполняется. У каждой линии свой порог: свежесть — WARN и SUSPEND, тишина — своя, heartbeat — общая линия SUSPEND. <b>Heartbeat BetGate штатно колеблется 5–16 с</b> (он приходит примерно раз в 15 с), поэтому пересечение им линий WARN и «тишина» — норма, а не сигнал. Красная заливка — минуты, когда гейт был в SUSPEND.</p>
+    <div class="chart-shell"><svg id="c0" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" role="img"></svg><div class="tt" id="tt0"></div></div>
+    <p class="cap" id="c0-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="c1-title">Поток сообщений</h2>
+      <div class="legend"><span><i class="sw area" style="--c:var(--series)"></i>фид → очередь (publish)</span><span><i class="sw line" style="--c:var(--series2)"></i>бридж подтвердил (ack)</span></div></div>
+    <p class="sub">Скорости по Management API RabbitMQ для очереди бриджа. В норме линия <b>ack</b> идёт вровень с <b>publish</b>: бридж съедает всё, что фид кладёт. Ночью поток падает до десятков сообщений в секунду, днём поднимается до сотен — это профиль фида, а не проблема. Если publish есть, а ack ушёл в ноль — бридж не потребляет.</p>
+    <div class="chart-shell"><svg id="c1" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" role="img"></svg><div class="tt" id="tt1"></div></div>
+    <p class="cap" id="c1-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="c2-title">Отставание бриджа от очереди</h2>
+      <div class="legend"><span><i class="sw area" style="--c:var(--series3)"></i>оценка отставания</span><span><i class="sw dash" style="--c:var(--warn)"></i>порог WARN</span><span><i class="sw ev"></i>≥ порога CRIT</span></div></div>
+    <p class="sub">Сколько секунд нужно бриджу, чтобы догнать очередь: <code>ready / ack_rate</code>. Ноль — очередь пуста, обновления применяются сразу. Кратковременные всплески на 2–10 с при рестарте MariaDB или вечернем пике штатны; полка выше порога означает, что база отстаёт от линии и коэффициенты в ней устаревают. Число сообщений в очереди — в тултипе.</p>
+    <div class="chart-shell"><svg id="c2" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" role="img"></svg><div class="tt" id="tt2"></div></div>
+    <p class="cap" id="c2-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="c3-title">Свежесть данных</h2>
+      <div class="legend"><span><i class="sw area" style="--c:var(--series2)"></i>секунд с последней записи в БД</span><span><i class="sw line" style="--c:var(--series6)"></i>возраст heartbeat фида</span><span><i class="sw dash" style="--c:var(--warn)"></i>порог WARN</span></div></div>
+    <p class="sub">Первая линия — сколько секунд назад бридж последний раз менял <code>events</code>/<code>markets</code>/<code>outcomes</code> (по <code>information_schema.update_time</code>): это прямой ответ на вопрос «пишет ли он прямо сейчас». Вторая — возраст поля <code>ts</code> в Redis-ключе <code>server</code>, self-report самого фида; если растёт она, стоит фид, а не бридж.</p>
+    <div class="chart-shell"><svg id="c3" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" role="img"></svg><div class="tt" id="tt3"></div></div>
+    <p class="cap" id="c3-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="c4-title">Live-события: Redis и их копии в MySQL</h2>
+      <div class="legend"><span><i class="sw area" style="--c:var(--series5)"></i>в Redis</span><span><i class="sw line" style="--c:var(--series)"></i>совпало в MySQL</span><span><i class="sw bar" style="--c:var(--warn)"></i>не дошло до БД</span><span><i class="sw ev"></i>не дошло &gt; порога</span></div></div>
+    <p class="sub">Сверка множеств, а не счётчиков: раз в минуту сканируются все события в Redis (<code>stage=2</code>, статус open/suspended) и проверяется, что каждое есть в базе в том же состоянии. Фид создаёт и стартует события пачками на круглых минутах, бридж применяет их за 1–2 с, поэтому события, которых не оказалось в базе, перепроверяются через 3 с (при непустой очереди окно растягивается на оценку отставания, до 15 с): догнавшие считаются латентностью (в тултипе), а столбцы «не дошло» — только то, что не догнало. Линия «совпало» должна лежать на линии Redis; полка столбцов — потеря потока. «Зомби» — события в базе, которых в Redis уже нет: фид их не закрыл, к бриджу претензий нет. Prematch — в тултипе.</p>
+    <div class="chart-shell"><svg id="c4" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" role="img"></svg><div class="tt" id="tt4"></div></div>
+    <p class="cap" id="c4-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="c5-title">Вставки в базу</h2>
+      <div class="legend"><span><i class="sw area" style="--c:var(--series4)"></i>исходов / мин</span><span><i class="sw line" style="--c:var(--series3)"></i>маркетов / мин</span></div></div>
+    <p class="sub">Сколько новых строк появляется в <code>outcomes</code> и <code>markets</code> за минуту (дельта <code>MAX(id)</code>). Это только <b>новые</b> объекты — обновления цен идут по существующим строкам и здесь не видны (их поток — на графике сообщений). Показывает, что линия расширяется, а не только переоценивается; события — в тултипе.</p>
+    <div class="chart-shell"><svg id="c5" viewBox="0 0 1000 280" preserveAspectRatio="xMidYMid meet" role="img"></svg><div class="tt" id="tt5"></div></div>
+    <p class="cap" id="c5-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2 id="c6-title">Ресурсы процесса</h2>
+      <div class="legend"><span><i class="sw area" style="--c:var(--series6)"></i>память RSS, МБ</span><span><i class="sw line" style="--c:var(--series)"></i>CPU, % одного ядра (правая ось)</span><span><i class="sw dash" style="--c:var(--warn)"></i>порог памяти</span></div></div>
+    <p class="sub">Память и CPU python-процесса бриджа по cgroup systemd. Бридж однопоточный: 100 % на правой оси — потолок, при котором он перестаёт успевать за очередью (см. отставание). Память в норме держится около 100–150 МБ; кэши ID ограничены в коде, устойчивый рост — утечка. Нагрузка сервера целиком (loadavg) — в тултипе.</p>
+    <div class="chart-shell"><svg id="c6" viewBox="0 0 1000 300" preserveAspectRatio="xMidYMid meet" role="img"></svg><div class="tt" id="tt6"></div></div>
+    <p class="cap" id="c6-cap">—</p>
+  </div>
+
+  <div class="card">
+    <div class="card-head"><h2>Очереди RabbitMQ</h2><div class="legend" id="q-status">—</div></div>
+    <p class="sub">Все очереди с тем же префиксом, что у бриджа. Первая — наша; остальные выданы партнёрам под их интеграции. На очередях стоит TTL сообщений 4 часа, поэтому бесконтрольного роста нет: у очереди без консьюмера накапливается ровно 4 часа потока и дальше старое вытесняется. Партнёр, который подключится позже, всё равно начнёт с Cold Start.</p>
+    <div class="tbl-scroll" id="queues"></div>
+  </div>
+
+  <div class="note">
+    <p class="row"><b>Как читать вердикт.</b> Красный итог — тракт стоит или база заведомо устарела: чинить сразу (сервис, MariaDB, консьюмер, отставание ≥ <span id="thr-lagc2">—</span>). Жёлтый — есть на что посмотреть, но данные идут: одиночные ошибки журнала (в основном рестарт MariaDB по unattended-upgrades около 06:40 UTC, бридж переподключается сам), расхождение с Redis, рост памяти, мало места. Свои пороги — в <code>health/collect.py</code>, словарь <code>THR</code>.</p>
+    <p class="row"><b>Что важно для WebSocket-сервера над этой базой.</b> Удаление объектов из Redis происходит по TTL без AMQP-сообщения, поэтому мост никогда не ставит <code>removed=1</code>: завершённые события и часть их исходов остаются в базе со старыми статусами. Выборки для игроков нужно ограничивать по времени события и статусу маркета, а не только по <code>removed</code>. У исходов в фиде нет полей <code>ver</code>/<code>uts</code> — в базе они всегда 0 и 1970-01-01; версия исхода живёт только в <code>dv</code> объекта Redis.</p>
+    <p class="row"><b>Что здесь не измеряется.</b> Корректность самих коэффициентов (это задача валидатора <code>validate.py</code>) и доступность фида для партнёров снаружи — только то, что видит этот сервер.</p>
+  </div>
+  <div class="foot"><span>Источники: <code>systemctl show</code> + <code>journalctl</code> юнита · Management API RabbitMQ (read-only) · Redis-ключ <code>server</code> · <code>information_schema</code> и счётчики MySQL feed_bridge. Время — местное для этого браузера: <span id="s-zone">—</span>.</span><span id="s-upd">обновлено —</span></div>
+</div></div>
+
+<script>
+const CFG = /*__DATA__*/;
+(function(){
+  const NS='http://www.w3.org/2000/svg';
+  const el=(n,a)=>{const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);return e;};
+  const pad=n=>String(n).padStart(2,'0');
+  const MON=['','янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  // Всё время на странице — ЛОКАЛЬНОЕ для браузера, в котором она открыта (сэмплы хранятся в epoch UTC).
+  const dt=ep=>{const z=new Date(ep*1000);return{H:z.getHours(),Mi:z.getMinutes(),D:z.getDate(),Mo:z.getMonth()+1};};
+  const loc=ep=>ep-new Date(ep*1000).getTimezoneOffset()*60;   // epoch со сдвигом в локальную зону — для границ суток/часов на оси
+  const ZONE=(()=>{const m=-new Date().getTimezoneOffset(),s=m<0?'−':'+',h=Math.floor(Math.abs(m)/60),mm=Math.abs(m)%60;let z='UTC'+s+h+(mm?':'+pad(mm):'');try{const n=Intl.DateTimeFormat().resolvedOptions().timeZone;if(n)z+=', '+n;}catch(e){}return z;})();
+  const tstr=ep=>{const c=dt(ep);return c.D+' '+MON[c.Mo]+', '+pad(c.H)+':'+pad(c.Mi);};
+  const CI={};CFG.cols.forEach((c,i)=>CI[c]=i);
+  const col=(r,k)=>r[CI[k]];
+  const fmtS=v=>v==null?'—':v<60?Math.round(v)+' с':v<3600?(v/60).toFixed(1)+' мин':v<86400?(v/3600).toFixed(1)+' ч':(v/86400).toFixed(1)+' сут';
+  const fmtN=v=>v==null?'—':Math.round(v).toLocaleString('ru-RU');
+  const fmtG=v=>v==null?'—':(v>=100?v.toFixed(0):v.toFixed(1))+' ГиБ';
+  const fmtUp=v=>{if(v==null)return '—';const d=Math.floor(v/86400),h=Math.floor(v%86400/3600),m=Math.floor(v%3600/60);return d>0?d+' сут '+h+' ч':h>0?h+' ч '+m+' мин':m+' мин';};
+  const fmtTick=v=>v>=10000?(v/1000).toFixed(0)+'k':v>=1000?(v/1000).toFixed(1)+'k':(v<10&&v!==Math.round(v))?v.toFixed(1):String(Math.round(v));
+  const VDN=['OK','WARN','CRIT'], VDC=['var(--good)','var(--warn)','var(--crit)'];
+  const RS={svc:'сервис не активен',mysql:'MySQL недоступен',mgmt:'Management API RabbitMQ недоступен',noconsumer:'у очереди нет консьюмера',stuck:'очередь растёт, ack≈0',lag:'отставание от очереди',wage:'нет записей в БД',redis:'Redis недоступен',feed:'фид сообщает о сбое',feedhb:'heartbeat фида устарел',live:'расхождение live БД/Redis',prematch:'расхождение prematch БД/Redis',errors:'ошибки в журнале',pc0:'pc=0 — рестарт сервера фида',restart:'рестарт сервиса',disk:'мало места на диске',mem:'память процесса выше порога'};
+  const rsText=s=>s?s.split(',').map(k=>RS[k]||k).join(', '):'';
+  // Гейт приёма ставок (feedbridge/gate.py): имена состояний и расшифровка причин.
+  const GN=['OPEN','HOLD','SUSPEND'], GC=['var(--good)','var(--warn)','var(--crit)'];
+  const GRS={lag:'данные отстают от фида',silence:'тишина в потоке',qlag:'мост не успевает за очередью',hb:'heartbeat BetGate устарел',amqp:'ядро: канал с BetGate нездоров',pub:'ядро: публикация нездорова',redis:'ядро: Redis нездоров',inactive:'ядро не активно',startup:'мост только запустился'};
+  const grsText=a=>(a&&a.length)?a.map(k=>GRS[k]||k).join(', '):'';
+  // Пороги гейта приходят из gate.json (их пишет мост). Если файла нет — значения по умолчанию,
+  // чтобы страница рисовалась и до первого запуска гейта.
+  const GT=Object.assign({lag_warn:10,lag_crit:30,silence_crit:15,qlag_crit:30,hb_crit:30,reopen_hold:30},
+                         (CFG.cur&&CFG.cur.gate&&CFG.cur.gate.thr)||{});
+  const data=days=>days<=CFG.kept.raw_days?CFG.h1:CFG.h10;
+  const stepOf=days=>days<=CFG.kept.raw_days?60:CFG.kept.agg_step;
+  const win=(arr,days)=>{if(!arr||!arr.length)return [];const cut=arr[arr.length-1][0]-days*86400;return arr.filter(p=>p[0]>=cut);};
+  const near=(d,tx)=>{let lo=0,hi=d.length-1;while(lo<hi){const m=(lo+hi)>>1;if(d[m][0]<tx)lo=m+1;else hi=m;}if(lo>0&&Math.abs(d[lo-1][0]-tx)<Math.abs(d[lo][0]-tx))lo--;return d[lo];};
+  const niceMax=m=>{if(!(m>0))return 1;const mag=Math.pow(10,Math.floor(Math.log10(m))),n=m/mag;return (n<=1?1:n<=2?2:n<=2.5?2.5:n<=5?5:10)*mag;};
+  function placeTT(tt,svg,pxS,pyS,W,H){
+    const sh=svg.parentElement.getBoundingClientRect();
+    const px=pxS/W*sh.width, py=pyS/H*sh.height, gap=18, pd=4;
+    const tw=tt.offsetWidth, th=tt.offsetHeight;
+    let left=px+gap; if(left+tw>sh.width-pd)left=px-gap-tw;
+    left=Math.max(pd,Math.min(left,sh.width-tw-pd));
+    let top=py-th/2; top=Math.max(pd,Math.min(top,sh.height-th-pd));
+    tt.style.left=left+'px';tt.style.top=top+'px';
+  }
+  // разделители суток (+ метки часов в узком окне) — по смене ключа, устойчиво к пропускам
+  function timeAxis(svg,d,x,M,ph,days){
+    let pd=null,ph6=null,n=0;
+    d.forEach(p=>{const l=loc(p[0]),kd=Math.floor(l/86400), k6=Math.floor(l/21600);
+      if(kd!==pd){ if(pd!==null){const xx=x(p[0]);n++;
+          svg.appendChild(el('line',{x1:xx,x2:xx,y1:M.t,y2:M.t+ph,stroke:'var(--axis)','stroke-width':1,'stroke-dasharray':'2 4',opacity:.7}));
+          if(days<=8||n%2===0){const c=dt(p[0]),tx=el('text',{x:xx+5,y:M.t+ph+16,'font-size':11.5,fill:'var(--ink-2)','font-weight':600});tx.textContent=c.D+' '+MON[c.Mo];svg.appendChild(tx);}}
+        pd=kd; ph6=k6; }
+      else if(days<=3&&k6!==ph6){ph6=k6;const xx=x(p[0]),c=dt(p[0]);
+        svg.appendChild(el('line',{x1:xx,x2:xx,y1:M.t+ph-5,y2:M.t+ph,stroke:'var(--axis)','stroke-width':1}));
+        const tx=el('text',{x:xx,y:M.t+ph+15,'text-anchor':'middle','font-size':10.5,fill:'var(--muted)'});tx.textContent=pad(c.H)+':00';svg.appendChild(tx);}
+    });
+  }
+  // ---------- универсальный график ----------
+  // o: {svg,tt,cap,title,days,H,series:[{k,name,kind:'area'|'line'|'bars',color,dash,w,ax,fmt}],
+  //     y:{unit,max,minmax}, y2:{unit,max,minmax}, thr:[{v,label,color,ax}], spike:row=>bool,
+  //     ttExtra:row=>html, capFn:(d,days)=>html}
+  function chart(o){
+    const svg=document.getElementById(o.svg), tt=document.getElementById(o.tt); svg.innerHTML='';
+    const W=1000,H=o.H||300,M={l:58,r:o.y2?58:18,t:26,b:46},pw=W-M.l-M.r,ph=H-M.t-M.b;
+    const all=win(data(o.days),o.days), d=all.filter(r=>o.series.some(s=>col(r,s.k)!=null));
+    const setCap=h=>{if(o.cap)document.getElementById(o.cap).innerHTML=h;};
+    if(d.length<2){svg.innerHTML='<text x="20" y="40" fill="gray" font-size="14">нет данных — сборщик накопит историю за несколько минут</text>';setCap('');return;}
+    const t0=d[0][0],t1=d[d.length-1][0], step=stepOf(o.days), gapT=step*4;
+    const x=t=>M.l+(t-t0)/(t1-t0)*pw;
+    const mkAxis=ax=>{const ss=o.series.filter(s=>(s.ax||1)===ax);let mx=0;
+      ss.forEach(s=>d.forEach(r=>{const v=col(r,s.k);if(v!=null&&v>mx)mx=v;}));
+      const yo=(ax===1?o.y:o.y2)||{};
+      (o.thr||[]).filter(t=>(t.ax||1)===ax&&t.v!=null&&!t.soft).forEach(t=>{if(t.v>mx)mx=t.v;});
+      let YMAX=yo.max!=null?yo.max:niceMax(mx*1.12);
+      if(yo.minmax!=null)YMAX=Math.max(YMAX,yo.minmax);
+      return {YMAX,y:v=>M.t+(1-Math.min(Math.max(v,0),YMAX)/YMAX)*ph,unit:yo.unit||'',fmt:yo.fmt||fmtTick};};
+    const A1=mkAxis(1), A2=o.y2?mkAxis(2):null;
+    [0,.25,.5,.75,1].forEach(f=>{const v=A1.YMAX*f,yy=A1.y(v);
+      svg.appendChild(el('line',{x1:M.l,x2:M.l+pw,y1:yy,y2:yy,stroke:'var(--grid)','stroke-width':1}));
+      const tx=el('text',{x:M.l-9,y:yy+3.5,'text-anchor':'end','font-size':11.5,fill:'var(--muted)','font-weight':500});tx.textContent=A1.fmt(v);svg.appendChild(tx);
+      if(A2){const v2=A2.YMAX*f,t2=el('text',{x:M.l+pw+9,y:yy+3.5,'text-anchor':'start','font-size':11.5,fill:'var(--muted)','font-weight':500});t2.textContent=A2.fmt(v2);svg.appendChild(t2);}});
+    const yl=el('text',{x:M.l-9,y:M.t-11,'text-anchor':'end','font-size':10.5,fill:'var(--muted)','font-weight':600});yl.textContent=A1.unit;svg.appendChild(yl);
+    if(A2){const y2l=el('text',{x:M.l+pw+9,y:M.t-11,'text-anchor':'start','font-size':10.5,fill:'var(--muted)','font-weight':600});y2l.textContent=A2.unit;svg.appendChild(y2l);}
+    timeAxis(svg,d,x,M,ph,o.days);
+    const defs=el('defs',{});svg.appendChild(defs);
+    const yb=M.t+ph;
+    o.series.forEach((s,i)=>{const A=(s.ax||1)===2?A2:A1, color=s.color||'var(--series)';
+      if(s.kind==='bars'){const bw=Math.max(1.2,Math.min(6,pw/d.length*0.8));
+        d.forEach(r=>{const v=col(r,s.k);if(v==null||v<=0)return;const h=Math.max(2,yb-A.y(v));
+          svg.appendChild(el('rect',{x:(x(r[0])-bw/2).toFixed(1),y:(yb-h).toFixed(1),width:bw.toFixed(1),height:h.toFixed(1),fill:color,opacity:.8,rx:1}));});
+        return;}
+      // сегменты с разрывами (пропуски сбора)
+      const segs=[];let cur=[];let pt=null;
+      d.forEach(r=>{const v=col(r,s.k);if(v==null){if(cur.length)segs.push(cur);cur=[];pt=null;return;}
+        if(pt!==null&&r[0]-pt>gapT){if(cur.length)segs.push(cur);cur=[];}
+        cur.push([r[0],v]);pt=r[0];});
+      if(cur.length)segs.push(cur);
+      if(s.kind==='area'){const gid='g'+o.svg+i,grad=el('linearGradient',{id:gid,x1:0,y1:0,x2:0,y2:1});
+        grad.appendChild(el('stop',{offset:0,'stop-color':color,'stop-opacity':.26}));grad.appendChild(el('stop',{offset:1,'stop-color':color,'stop-opacity':.02}));defs.appendChild(grad);
+        segs.forEach(sg=>{if(sg.length<1)return;let ap='M'+x(sg[0][0]).toFixed(1)+' '+yb;sg.forEach(p=>ap+=' L'+x(p[0]).toFixed(1)+' '+A.y(p[1]).toFixed(1));ap+=' L'+x(sg[sg.length-1][0]).toFixed(1)+' '+yb+' Z';
+          svg.appendChild(el('path',{d:ap,fill:'url(#'+gid+')'}));});}
+      segs.forEach(sg=>{if(sg.length===1){svg.appendChild(el('circle',{cx:x(sg[0][0]),cy:A.y(sg[0][1]),r:1.6,fill:color}));return;}
+        let lp='';sg.forEach((p,j)=>lp+=(j?' L':'M')+x(p[0]).toFixed(1)+' '+A.y(p[1]).toFixed(1));
+        svg.appendChild(el('path',{d:lp,fill:'none',stroke:color,'stroke-width':s.w||1.5,'stroke-dasharray':s.dash||'0','stroke-linejoin':'round',opacity:s.op||1}));});
+    });
+    (o.thr||[]).forEach(t=>{if(t.v==null)return;const A=(t.ax||1)===2?A2:A1;if(t.v>A.YMAX)return;const yy=A.y(t.v);
+      svg.appendChild(el('line',{x1:M.l,x2:M.l+pw,y1:yy,y2:yy,stroke:t.color||'var(--warn)','stroke-width':1.2,'stroke-dasharray':'6 5'}));
+      if(t.label){const tl=el('text',{x:M.l+pw-4,y:yy-6,'text-anchor':'end','font-size':11,fill:t.color||'var(--warn)','font-weight':600});tl.textContent=t.label;svg.appendChild(tl);}});
+    if(o.spike){const s0=o.series[0],A=(s0.ax||1)===2?A2:A1;
+      d.forEach(r=>{if(o.spike(r)){const v=col(r,s0.k);if(v==null)return;svg.appendChild(el('circle',{cx:x(r[0]),cy:A.y(v),r:3.2,fill:'var(--crit)',stroke:'var(--surface)','stroke-width':1.2}));}});}
+    const cross=el('line',{x1:0,x2:0,y1:M.t,y2:M.t+ph,stroke:'var(--ink-2)','stroke-width':1,opacity:0});
+    const hdc=el('circle',{r:4.5,fill:'var(--series)',stroke:'var(--surface)','stroke-width':2,opacity:0});
+    svg.appendChild(cross);svg.appendChild(hdc);
+    const hit=el('rect',{x:M.l,y:M.t,width:pw,height:ph,fill:'transparent'});svg.appendChild(hit);
+    const leave=()=>{cross.setAttribute('opacity',0);hdc.setAttribute('opacity',0);tt.style.opacity=0;};
+    hit.addEventListener('pointermove',e=>{const r=svg.getBoundingClientRect(),sx=(e.clientX-r.left)/r.width*W,sy=(e.clientY-r.top)/r.height*H;
+      if(sx<M.l||sx>M.l+pw)return leave();
+      const p=near(d,t0+(sx-M.l)/pw*(t1-t0)),px=x(p[0]);
+      const ser=o.series.map(s=>({s,v:col(p,s.k),A:(s.ax||1)===2?A2:A1})).filter(q=>q.v!=null);
+      if(!ser.length)return leave();
+      let bi=0,bd=Infinity;ser.forEach((q,i)=>{const dy=Math.abs(q.A.y(q.v)-sy);if(dy<bd){bd=dy;bi=i;}});
+      const best=ser[bi],py=best.A.y(best.v),warn=o.spike?o.spike(p):false;
+      cross.setAttribute('x1',px);cross.setAttribute('x2',px);cross.setAttribute('opacity',.5);
+      hdc.setAttribute('cx',px);hdc.setAttribute('cy',py);hdc.setAttribute('fill',best.s.color||'var(--series)');hdc.setAttribute('opacity',1);
+      tt.className='tt'+(warn?' warn':'');tt.style.opacity=1;
+      const f=q=>(q.s.fmt||fmtN)(q.v);
+      tt.innerHTML='<div class="tt-t">'+tstr(p[0])+(o.days>CFG.kept.raw_days?' · окно 10 мин':'')+'</div>'
+        +'<div class="tt-v" style="color:'+(best.s.color||'var(--series)')+'">'+best.s.name+' '+f(best)+'</div>'
+        +(ser.length>1?'<div class="tt-h">'+ser.filter((q,i)=>i!==bi).map(q=>q.s.name+' '+f(q)).join(' · ')+'</div>':'')
+        +(o.ttExtra?'<div class="tt-h">'+o.ttExtra(p)+'</div>':'');
+      placeTT(tt,svg,px,py,W,H);});
+    hit.addEventListener('pointerleave',leave);
+    const a=dt(t0),b=dt(t1);
+    if(o.title)document.getElementById(o.svg+'-title').textContent=o.title+' · '+a.D+' '+MON[a.Mo]+' → '+b.D+' '+MON[b.Mo];
+    if(o.capFn)setCap(o.capFn(d,o.days));
+  }
+  const stat=(d,k)=>{const v=d.map(r=>col(r,k)).filter(x=>x!=null);if(!v.length)return null;return{max:Math.max(...v),min:Math.min(...v),avg:v.reduce((a,b)=>a+b,0)/v.length,last:v[v.length-1]};};
+  const maxRow=(d,k)=>d.reduce((m,r)=>(col(r,k)!=null&&(m==null||col(r,k)>col(m,k)))?r:m,null);
+  const perLbl=days=>days<=3?'3 сут':days+' дн';
+  const b=(s,c)=>'<b style="color:'+(c||'var(--ink)')+'">'+s+'</b>';
+
+  // ---------- полоса вердикта ----------
+  function strip(days){
+    const svg=document.getElementById('strip'),tt=document.getElementById('tt-strip');svg.innerHTML='';
+    const d=win(data(days),days);const W=1000,H=40;
+    if(d.length<2){svg.innerHTML='<text x="10" y="26" fill="gray" font-size="14">нет данных</text>';document.getElementById('strip-cap').textContent='';return;}
+    const t0=d[0][0],t1=d[d.length-1][0],step=stepOf(days),x=t=>(t-t0)/(t1-t0)*W;
+    const cnt=[0,0,0];let gaps=0;
+    d.forEach((r,i)=>{const nxt=i<d.length-1?d[i+1][0]:r[0]+step;const gap=nxt-r[0]>step*4;
+      const x0=x(r[0]),x1=x(gap?r[0]+step:nxt),vd=col(r,'vd');
+      svg.appendChild(el('rect',{x:x0.toFixed(2),y:6,width:Math.max(0.6,x1-x0).toFixed(2),height:28,fill:vd==null?'var(--axis)':VDC[vd]}));
+      if(vd!=null)cnt[vd]++;
+      if(gap){gaps++;svg.appendChild(el('rect',{x:x1.toFixed(2),y:6,width:(x(nxt)-x1).toFixed(2),height:28,fill:'var(--axis)',opacity:.5}));}});
+    const hit=el('rect',{x:0,y:0,width:W,height:H,fill:'transparent'});svg.appendChild(hit);
+    hit.addEventListener('pointermove',e=>{const rc=svg.getBoundingClientRect(),sx=(e.clientX-rc.left)/rc.width*W;
+      const p=near(d,t0+sx/W*(t1-t0)),vd=col(p,'vd');tt.style.opacity=1;tt.className='tt'+(vd===2?' warn':'');
+      tt.innerHTML='<div class="tt-t">'+tstr(p[0])+'</div><div class="tt-v" style="color:'+(vd==null?'var(--muted)':VDC[vd])+'">'+(vd==null?'нет данных':VDN[vd])+'</div>'+(col(p,'rs')?'<div class="tt-h">'+rsText(col(p,'rs'))+'</div>':'');
+      placeTT(tt,svg,x(p[0]),20,W,H);});
+    hit.addEventListener('pointerleave',()=>{tt.style.opacity=0;});
+    const tot=cnt[0]+cnt[1]+cnt[2]||1,a=dt(t0),bb=dt(t1);
+    document.getElementById('strip-title').textContent='Вердикт по времени · '+a.D+' '+MON[a.Mo]+' → '+bb.D+' '+MON[bb.Mo];
+    document.getElementById('strip-cap').innerHTML='За '+perLbl(days)+': OK '+b((100*cnt[0]/tot).toFixed(1)+'%','var(--good)')+' · WARN '+b((100*cnt[1]/tot).toFixed(1)+'%','var(--warn)')+' · CRIT '+b((100*cnt[2]/tot).toFixed(1)+'%',cnt[2]?'var(--crit)':'var(--ink)')+(gaps?' · пропусков сбора: '+gaps:'');
+  }
+
+  // ---------- плитки ----------
+  function tiles(){
+    const c=CFG.cur||{},d=CFG.d24||{},T=CFG.thr;
+    const vd=c.vd==null?null:c.vd;
+    const tv=document.getElementById('t-vd');tv.className='tile verdict v'+(vd==null?'1':vd);
+    document.getElementById('t-vd-v').innerHTML='<span style="color:'+(vd==null?'var(--muted)':VDC[vd])+'">'+(vd==null?'—':VDN[vd])+'</span>';
+    document.getElementById('t-vd-s').textContent=vd?rsText((c.rs||[]).join(',')):'все проверки в норме · за 24 ч OK '+(d.ok_pct!=null?d.ok_pct+'%':'—');
+    const ts=document.getElementById('t-svc');ts.className='tile '+(c.svc?'good':'crit');
+    document.getElementById('t-svc-v').innerHTML=c.svc?'active<small>'+(c.sub||'')+'</small>':'<span>'+(c.sub||'down')+'</span>';
+    document.getElementById('t-svc-s').textContent=c.svc?'работает '+fmtUp(c.up)+(c.start?' · с '+tstr(c.start):'')+(c.pid?' · PID '+c.pid:''):'юнит '+CFG.unit+' не активен';
+    const tl=document.getElementById('t-lag');tl.className='tile '+(c.lag==null?'':c.lag>=T.lag_crit?'crit':c.lag>=T.lag_warn?'warn':'accent');
+    document.getElementById('t-lag-v').innerHTML=c.lag==null?(c.cons===0?'<span style="color:var(--crit)">нет консьюмера</span>':'—'):(c.lag<60?c.lag+'<small>с</small>':fmtS(c.lag));
+    document.getElementById('t-lag-s').textContent='в очереди '+fmtN(c.ready)+' сообщ.'+(c.unack!=null?' · не подтверждено '+c.unack:'')+' · консьюмеров '+(c.cons==null?'—':c.cons)+(d.lag_max!=null?' · макс 24 ч '+fmtS(d.lag_max):'');
+    const g=c.gate,gs=c.gs;
+    const tg=document.getElementById('t-gate');tg.className='tile '+(gs==null?'':gs===2?'crit':gs===1?'warn':'good');
+    document.getElementById('t-gate-v').innerHTML=gs==null?'—':'<span style="color:'+GC[gs]+'">'+GN[gs]+'</span>';
+    document.getElementById('t-gate-s').textContent=gs==null
+      ? 'гейт не запущен: нет gate.json — обновите мост и перезапустите юнит'
+      : (gs===2 ? grsText(g&&g.reasons)
+                : (gs===1?'норма, выдержка до открытия '+fmtS(GT.reopen_hold)+' · ':'')
+                  + 'свежесть '+(c.glag==null?'—':fmtS(c.glag))+' · тишина '+(c.gsil==null?'—':fmtS(c.gsil))
+                  + (c.ghb!=null?' · heartbeat BetGate '+fmtS(c.ghb):''))
+        + (c.gage!=null&&c.gage>60?' · состояние устарело на '+fmtS(c.gage):'');
+    const tf=document.getElementById('t-flow');tf.className='tile '+((c.pub||0)>5&&(c.ack||0)<1?'crit':'');
+    document.getElementById('t-flow-v').innerHTML=(c.ack==null?'—':Math.round(c.ack))+'<small>msg/s ack</small>';
+    document.getElementById('t-flow-s').textContent='фид публикует '+(c.pub==null?'—':Math.round(c.pub))+' msg/s'+(d.ack_avg!=null?' · среднее ack 24 ч '+Math.round(d.ack_avg):'')+(c.pub_mps!=null?' · сервер фида '+Math.round(c.pub_mps)+' msg/s':'');
+    const tw=document.getElementById('t-wage');tw.className='tile '+(c.wage==null?'':c.wage>=T.wage_crit?'crit':c.wage>=T.wage_warn?'warn':'good');
+    document.getElementById('t-wage-v').innerHTML=c.wage==null?'—':(c.wage<60?c.wage+'<small>с назад</small>':fmtS(c.wage)+'<small>назад</small>');
+    document.getElementById('t-wage-s').textContent=(c.ev_uts!=null?'последнее событие фида '+fmtS(Math.max(0,CFG.now-c.ev_uts))+' назад':'')+(c.sage!=null?' · heartbeat фида '+c.sage+' с':'')+(c.my_ms!=null?' · MySQL '+c.my_ms+' мс':'');
+    const tli=document.getElementById('t-live');tli.className='tile '+(c.live_miss==null?'':c.live_miss>T.live_miss_warn?'warn':'good');
+    document.getElementById('t-live-v').innerHTML=(c.live_db==null?'—':c.live_db)+'<small>/ '+(c.live_r==null?'—':c.live_r)+'</small>';
+    document.getElementById('t-live-s').textContent='не дошло до БД '+(c.live_miss==null?'—':c.live_miss)+' · зомби в БД '+(c.live_zomb==null?'—':c.live_zomb)+' · prematch '+(c.pre_db==null?'—':fmtN(c.pre_db))+' / '+(c.pre_r==null?'—':fmtN(c.pre_r))+(c.pre_miss?' (не дошло '+c.pre_miss+')':'');
+    const te=document.getElementById('t-err');const errs=(d.err||0)+(d.pc0||0);te.className='tile '+(errs?'warn':'');
+    document.getElementById('t-err-v').innerHTML=errs+'<small>'+(d.rst?'· рестартов '+d.rst:'')+'</small>';
+    document.getElementById('t-err-s').textContent=(errs?'строк в журнале с ошибками':'журнал чистый')+(d.pc0?' · pc=0: '+d.pc0:'')+(d.crit_pct!=null&&d.crit_pct>0?' · CRIT '+d.crit_pct+'% времени':'');
+    const free=(c.dsk_u!=null&&c.dsk_t!=null)?c.dsk_t-c.dsk_u:null;
+    const tdb=document.getElementById('t-db');tdb.className='tile '+(free==null?'':free<T.disk_crit_gb?'crit':free<T.disk_warn_gb?'warn':'');
+    document.getElementById('t-db-v').innerHTML=(c.db_gb==null?'—':fmtG(c.db_gb));
+    document.getElementById('t-db-s').textContent='свободно '+(free==null?'—':fmtG(free))+' из '+(c.dsk_t==null?'—':fmtG(c.dsk_t))+(d.growth_gb!=null?' · рост '+(d.growth_gb>=0?'+':'')+d.growth_gb.toFixed(2)+' ГиБ/сут':'')+(free!=null&&d.growth_gb>0?' · хватит ~'+Math.round(free/d.growth_gb)+' сут':'');
+    document.getElementById('s-upd').textContent='обновлено '+tstr(CFG.now)+' · '+fmtS(Math.max(0,Math.round(Date.now()/1000)-CFG.now))+' назад';
+    document.getElementById('s-zone').textContent=ZONE;
+    document.getElementById('e-queue').textContent=CFG.queue||'';document.getElementById('e-db').textContent=CFG.db||'feed_bridge';
+    document.getElementById('thr-lagc').textContent=fmtS(T.lag_crit);document.getElementById('thr-lagc2').textContent=fmtS(T.lag_crit);document.getElementById('thr-wagec').textContent=fmtS(T.wage_crit);
+  }
+  // ---------- сборщик (bridge.py --sweep) ----------
+  function sweep(){const s=CFG.cur&&CFG.cur.sweep,el=document.getElementById('sweep');if(!s){el.className='okline';el.innerHTML='<span class="dot" style="background:var(--axis)"></span><span>сборщик <code>--sweep</code>: ещё не запускался</span>';return;}
+    if(s.first){el.className='okline';el.innerHTML='<span class="dot" style="background:var(--warn)"></span><span>сборщик <code>--sweep</code>: <b>идёт первый прогон</b> по накопленной базе (сотни тысяч событий, чанками с паузами) — итог появится по завершении</span>';return;}
+    const age=Math.max(0,CFG.now-(s.t||0)),stale=age>20*60&&!s.running,bad=(s.errors&&s.errors.length)||stale;
+    el.className='okline'+(bad?' bad':'');
+    el.innerHTML='<span class="dot"></span><span>сборщик <code>--sweep</code>: '+(s.running?'<b>идёт сейчас</b>, предыдущий прогон ':'последний прогон ')+tstr(s.t)+' ('+fmtS(age)+' назад, '+fmtS(s.duration_s||0)+'): истекло по TTL '+fmtN(s.expired_events)+' соб. / '+fmtN(s.expired_outcomes)+' исх. · аномалий (ключа нет в Redis) <b>'+fmtN(s.anomaly_gone)+'</b> из '+fmtN(s.anomaly_checked)+' активных'+(s.anomaly_skipped?' · <b style="color:var(--warn)">'+s.anomaly_skipped.replace(/</g,'&lt;')+'</b>':'')+' · удалено по ретенции '+fmtN(s.purged_events)+' соб. · ждут ретенции '+fmtN(s.purge_pending)+(s.errors&&s.errors.length?' · <b style="color:var(--crit)">ошибки: '+String(s.errors).replace(/</g,'&lt;')+'</b>':'')+(stale?' · <b style="color:var(--crit)">прогонов не было '+fmtS(age)+'</b>':'')+'</span>';}
+  // ---------- события ----------
+  function events(){
+    const ev=(CFG.events||[]).slice().reverse(),box=document.getElementById('events');
+    if(!ev.length){box.innerHTML='<p class="okline"><span class="dot"></span>Событий (рестарты, ошибки, смена вердикта) за 30 дней не зафиксировано.</p>';return;}
+    const KN={restart:'рестарт',error:'ошибка',verdict:'вердикт'};
+    let h='<div class="tbl-scroll"><table class="tbl"><tr><th>Когда</th><th>Тип</th><th>Что</th></tr>';
+    ev.forEach(e=>{h+='<tr><td class="mono">'+tstr(e.t)+'</td><td><span class="bdg '+(e.kind==='verdict'?'v'+(e.vd==null?1:e.vd):'k')+'">'+(KN[e.kind]||e.kind)+'</span></td><td>'+(e.text||'').replace(/</g,'&lt;')+'</td></tr>';});
+    box.innerHTML=h+'</table></div>';
+  }
+  // ---------- очереди ----------
+  function queues(){
+    const c=CFG.cur||{},qs=[{name:CFG.queue,ours:true,msgs:c.ready!=null?c.ready+(c.unack||0):null,ready:c.ready,unack:c.unack,cons:c.cons,pub:c.pub,ack:c.ack,mb:null}].concat(CFG.partners||[]);
+    const st=document.getElementById('q-status');st.innerHTML=c.mq?'<span><i class="sw bar" style="--c:var(--good)"></i>Management API отвечает</span>':'<span><i class="sw bar" style="--c:var(--crit)"></i>Management API недоступен'+(c.mq_err?': '+c.mq_err.replace(/</g,'&lt;'):'')+'</span>';
+    let h='<table class="tbl"><tr><th>Очередь</th><th>Кто</th><th class="num">Сообщений</th><th class="num">Консьюмеров</th><th class="num">publish/s</th><th class="num">ack/s</th><th class="num">Объём</th><th>Состояние</th></tr>';
+    qs.forEach(q=>{const idle=!q.ours&&(q.cons||0)===0;
+      const state=q.ours?((q.cons||0)>0?'<span class="bdg v0">потребляется</span>':'<span class="bdg v2">нет консьюмера</span>'):(idle?'<span class="bdg k">партнёр не подключён</span>':'<span class="bdg v0">потребляется</span>');
+      h+='<tr><td class="mono">'+q.name+'</td><td>'+(q.ours?'бридж (этот сервер)':'партнёр')+'</td><td class="num">'+fmtN(q.msgs)+'</td><td class="num">'+(q.cons==null?'—':q.cons)+'</td><td class="num">'+(q.pub==null?'—':Math.round(q.pub))+'</td><td class="num">'+(q.ack==null?'—':Math.round(q.ack))+'</td><td class="num">'+(q.mb==null?'—':q.mb.toFixed(0)+' МиБ')+'</td><td>'+state+'</td></tr>';});
+    document.getElementById('queues').innerHTML=h+'</table>';
+  }
+
+  // ---------- графики сервера — код витрины ch-mem, данные из рядов сборщика ----------
+  const pct=v=>(v>=10?v.toFixed(0):v.toFixed(1))+'%';
+  const fmtGi=v=>v==null?'—':(Math.abs(v)>=100?v.toFixed(0):v.toFixed(1))+' ГиБ';
+  const winLbl=days=>days<=CFG.kept.raw_days?'1-мин точки':'10-мин окна';
+  const niceStep=m=>{const raw=m/4,mag=Math.pow(10,Math.floor(Math.log10(raw))),n=raw/mag;return (n<1.5?1:n<3?2:n<7?5:10)*mag;};
+  const noData=(svg,cap,msg)=>{svg.innerHTML='<text x="20" y="40" fill="gray" font-size="14">'+(msg||'нет данных')+'</text>';document.getElementById(cap).textContent='';};
+
+  // CPU: ряд [ep, user%, system%, iowait%, пик%, loadavg]. Стек user+system+iowait — среднее по
+  // окну (складывать максимумы нельзя, они в разные минуты); пунктир — пик (худшая минута окна).
+  // Ось Y фиксирована 0..100% — это доля CPU, авто-масштаб только вводил бы в заблуждение.
+  function renderCpu(days){
+    const cSvg=document.getElementById('chart-cpu'),cTT=document.getElementById('tt-cpu');if(!cSvg)return;cSvg.innerHTML='';
+    const W6=1000,H6=300,M6={l:54,r:18,t:26,b:46},pw6=W6-M6.l-M6.r,ph6=H6-M6.t-M6.b;
+    const d=win(data(days),days).filter(r=>col(r,'cpu_u')!=null&&col(r,'cpu_s')!=null&&col(r,'cpu_w')!=null)
+      .map(r=>[r[0],col(r,'cpu_u'),col(r,'cpu_s'),col(r,'cpu_w'),col(r,'cpu_pk')!=null?col(r,'cpu_pk'):col(r,'cpu_u')+col(r,'cpu_s')+col(r,'cpu_w'),col(r,'load')!=null?col(r,'load'):0]);
+    if(d.length<2)return noData(cSvg,'cpu-cap');
+    const t0=d[0][0],t1=d[d.length-1][0],YMAX=100;
+    const x=t=>M6.l+(t-t0)/(t1-t0)*pw6, y=v=>M6.t+(1-Math.min(v,YMAX)/YMAX)*ph6;
+    [0,25,50,75,100].forEach(v=>{const yy=y(v);
+      cSvg.appendChild(el('line',{x1:M6.l,x2:M6.l+pw6,y1:yy,y2:yy,stroke:'var(--grid)','stroke-width':1}));
+      const tx=el('text',{x:M6.l-9,y:yy+3.5,'text-anchor':'end','font-size':11.5,fill:'var(--muted)','font-weight':500});tx.textContent=v;cSvg.appendChild(tx);});
+    const yl=el('text',{x:M6.l-9,y:M6.t-11,'text-anchor':'end','font-size':10.5,fill:'var(--muted)','font-weight':600});yl.textContent='%';cSvg.appendChild(yl);
+    timeAxis(cSvg,d,x,M6,ph6,days);
+    // стек снизу вверх: user → +system → +iowait; каждый слой — замкнутая область
+    const band=(lo,hi,fill)=>{let p='M'+x(t0)+' '+y(lo(d[0]));
+      d.forEach(q=>p+=' L'+x(q[0]).toFixed(1)+' '+y(hi(q)).toFixed(1));
+      for(let i=d.length-1;i>=0;i--)p+=' L'+x(d[i][0]).toFixed(1)+' '+y(lo(d[i])).toFixed(1);
+      cSvg.appendChild(el('path',{d:p+' Z',fill:fill}));};
+    band(()=>0, q=>q[1], 'color-mix(in srgb,var(--series6) 55%,transparent)');
+    band(q=>q[1], q=>q[1]+q[2], 'color-mix(in srgb,var(--series6) 26%,transparent)');
+    band(q=>q[1]+q[2], q=>q[1]+q[2]+q[3], 'color-mix(in srgb,var(--crit) 45%,transparent)');
+    let lt='M'+x(t0)+' '+y(d[0][1]);d.forEach(q=>lt+=' L'+x(q[0]).toFixed(1)+' '+y(q[1]).toFixed(1));
+    cSvg.appendChild(el('path',{d:lt,fill:'none',stroke:'var(--series6)','stroke-width':1.5,'stroke-linejoin':'round'}));
+    let pk='M'+x(t0)+' '+y(d[0][4]);d.forEach(q=>pk+=' L'+x(q[0]).toFixed(1)+' '+y(q[4]).toFixed(1));
+    cSvg.appendChild(el('path',{d:pk,fill:'none',stroke:'var(--ink-2)','stroke-width':1,opacity:.55,'stroke-dasharray':'4 3','stroke-linejoin':'round'}));
+    const cross=el('line',{x1:0,x2:0,y1:M6.t,y2:M6.t+ph6,stroke:'var(--ink-2)','stroke-width':1,opacity:0});
+    const hdc=el('circle',{r:4.5,fill:'var(--series6)',stroke:'var(--surface)','stroke-width':2,opacity:0});
+    cSvg.appendChild(cross);cSvg.appendChild(hdc);
+    const hit=el('rect',{x:M6.l,y:M6.t,width:pw6,height:ph6,fill:'transparent'});cSvg.appendChild(hit);
+    const leave=()=>{cross.setAttribute('opacity',0);hdc.setAttribute('opacity',0);cTT.style.opacity=0;};
+    const cores=(CFG.cur&&CFG.cur.ncpu)||0;
+    hit.addEventListener('pointermove',e=>{const r=cSvg.getBoundingClientRect(),sx=(e.clientX-r.left)/r.width*W6,sy=(e.clientY-r.top)/r.height*H6;
+      if(sx<M6.l||sx>M6.l+pw6)return leave();
+      const p=near(d,t0+(sx-M6.l)/pw6*(t1-t0)),px=x(p[0]),tot=p[1]+p[2]+p[3];
+      const ser=[{n:'среднее',v:tot,c:'var(--series6)'},{n:'пик в окне',v:p[4],c:'var(--ink-2)'}];
+      let bi=0,bd=Infinity;ser.forEach((s,i)=>{const dy=Math.abs(y(s.v)-sy);if(dy<bd){bd=dy;bi=i;}});
+      const best=ser[bi],py=y(best.v),warn=p[4]>=95;
+      cross.setAttribute('x1',px);cross.setAttribute('x2',px);cross.setAttribute('opacity',.5);
+      hdc.setAttribute('cx',px);hdc.setAttribute('cy',py);hdc.setAttribute('fill',best.c);hdc.setAttribute('opacity',1);
+      cTT.className='tt'+(warn?' warn':'');cTT.style.opacity=1;
+      cTT.innerHTML='<div class="tt-t">'+tstr(p[0])+'</div>'
+        +'<div class="tt-v" style="color:'+best.c+'">'+best.n+' '+pct(best.v)+'</div>'
+        +'<div class="tt-h">user '+pct(p[1])+' · system '+pct(p[2])+' · iowait '+pct(p[3])+'</div>'
+        +'<div class="tt-h">load avg 1м: '+p[5].toFixed(2)+(cores?' (ядер '+cores+')':'')+'</div>';
+      placeTT(cTT,cSvg,px,py,W6,H6);});
+    hit.addEventListener('pointerleave',leave);
+    const a=dt(t0),bb=dt(t1);
+    document.getElementById('cpu-title').textContent='Загрузка CPU сервера — '+winLbl(days)+' · '+a.D+' '+MON[a.Mo]+' → '+bb.D+' '+MON[bb.Mo];
+    const nowp=d[d.length-1],nowTot=nowp[1]+nowp[2]+nowp[3];
+    const avgs=d.map(q=>q[1]+q[2]+q[3]).slice().sort((u,v)=>u-v),med=avgs[Math.floor(avgs.length/2)];
+    const peak=d.reduce((m,q)=>q[4]>m[4]?q:m,d[0]);
+    const laPeak=d.reduce((m,q)=>q[5]>m[5]?q:m,d[0]);
+    document.getElementById('cpu-cap').innerHTML='Сейчас <b style="color:var(--ink)">'+pct(nowTot)+'</b> · медиана '+perLbl(days)+' '+pct(med)
+      +' · пик '+pct(peak[4])+' ('+tstr(peak[0])+')'
+      +' · макс load avg <b style="color:'+(cores&&laPeak[5]>cores?'var(--crit)':'var(--ink-2)')+'">'+laPeak[5].toFixed(1)+'</b>'
+      +(cores?' при '+cores+' ядрах':'')+' ('+tstr(laPeak[0])+')';
+  }
+
+  // Память сервера: ряд [ep, занято ГиБ, RSS MariaDB МБ, RSS бриджа МБ]; потолок = вся RAM.
+  function renderMem(days){
+    const mSvg=document.getElementById('chart-mem'),mTT=document.getElementById('tt-mem');if(!mSvg)return;mSvg.innerHTML='';
+    const W1=1000,H1=400,M1={l:54,r:18,t:26,b:46},pw1=W1-M1.l-M1.r,ph1=H1-M1.t-M1.b;
+    const rows=win(data(days),days).filter(r=>col(r,'mem_used')!=null);
+    const d=rows.map(r=>[r[0],col(r,'mem_used'),col(r,'mdb_rss'),col(r,'mem')]);
+    if(d.length<2)return noData(mSvg,'mem-cap');
+    const CEIL=(CFG.cur&&CFG.cur.mem_tot)||col(rows[rows.length-1],'mem_tot')||d.reduce((m,p)=>Math.max(m,p[1]),0)*1.25;
+    const YMAX=CEIL*1.06,ZONE=CEIL*0.9,SPIKE=CEIL*0.85;
+    const t0=d[0][0],t1=d[d.length-1][0];
+    const x=t=>M1.l+(t-t0)/(t1-t0)*pw1, y=v=>M1.t+(1-Math.min(v,YMAX)/YMAX)*ph1;
+    mSvg.appendChild(el('rect',{x:M1.l,y:y(CEIL),width:pw1,height:y(ZONE)-y(CEIL),fill:'var(--crit-wash)'}));
+    const st=niceStep(CEIL),gl=[];for(let v=0;v<CEIL*0.93;v+=st)gl.push(v);gl.push(CEIL);
+    gl.forEach(v=>{const yy=y(v),isC=v===CEIL;
+      mSvg.appendChild(el('line',{x1:M1.l,x2:M1.l+pw1,y1:yy,y2:yy,stroke:isC?'var(--crit)':'var(--grid)','stroke-width':isC?1.4:1,'stroke-dasharray':isC?'6 5':'0'}));
+      const tx=el('text',{x:M1.l-9,y:yy+3.5,'text-anchor':'end','font-size':11.5,fill:isC?'var(--crit)':'var(--muted)','font-weight':isC?650:500});tx.textContent=isC?CEIL.toFixed(1):(v%1?v.toFixed(1):v);mSvg.appendChild(tx);});
+    const yl=el('text',{x:M1.l-9,y:M1.t-11,'text-anchor':'end','font-size':10.5,fill:'var(--muted)','font-weight':600});yl.textContent='ГиБ';mSvg.appendChild(yl);
+    timeAxis(mSvg,d,x,M1,ph1,days);
+    const defs=el('defs',{}),grad=el('linearGradient',{id:'gmem',x1:0,y1:0,x2:0,y2:1});
+    grad.appendChild(el('stop',{offset:0,'stop-color':'var(--series)','stop-opacity':.26}));
+    grad.appendChild(el('stop',{offset:1,'stop-color':'var(--series)','stop-opacity':.02}));
+    defs.appendChild(grad);mSvg.appendChild(defs);
+    let ap='M'+x(t0)+' '+y(0);d.forEach(p=>ap+=' L'+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1));ap+=' L'+x(t1)+' '+y(0)+' Z';
+    mSvg.appendChild(el('path',{d:ap,fill:'url(#gmem)'}));
+    let lp='M'+x(t0)+' '+y(d[0][1]);d.forEach(p=>lp+=' L'+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1));
+    mSvg.appendChild(el('path',{d:lp,fill:'none',stroke:'var(--series)','stroke-width':1.5,'stroke-linejoin':'round'}));
+    const cl=el('text',{x:M1.l+pw1-4,y:y(CEIL)-6,'text-anchor':'end','font-size':11,fill:'var(--crit)','font-weight':650});cl.textContent='потолок '+fmtGi(CEIL)+' (вся RAM)';mSvg.appendChild(cl);
+    d.forEach(p=>{if(p[1]>=SPIKE)mSvg.appendChild(el('circle',{cx:x(p[0]),cy:y(p[1]),r:3.4,fill:'var(--crit)',stroke:'var(--surface)','stroke-width':1.2}));});
+    const cross=el('line',{x1:0,x2:0,y1:M1.t,y2:M1.t+ph1,stroke:'var(--ink-2)','stroke-width':1,opacity:0});
+    const hdc=el('circle',{r:4.5,fill:'var(--series)',stroke:'var(--surface)','stroke-width':2,opacity:0});
+    mSvg.appendChild(cross);mSvg.appendChild(hdc);
+    const hit=el('rect',{x:M1.l,y:M1.t,width:pw1,height:ph1,fill:'transparent'});mSvg.appendChild(hit);
+    const leave=()=>{cross.setAttribute('opacity',0);hdc.setAttribute('opacity',0);mTT.style.opacity=0;};
+    hit.addEventListener('pointermove',e=>{const r=mSvg.getBoundingClientRect(),sx=(e.clientX-r.left)/r.width*W1;
+      if(sx<M1.l||sx>M1.l+pw1)return leave();
+      const p=near(d,t0+(sx-M1.l)/pw1*(t1-t0)),px=x(p[0]),py=y(p[1]),warn=p[1]>=ZONE;
+      cross.setAttribute('x1',px);cross.setAttribute('x2',px);cross.setAttribute('opacity',.5);
+      hdc.setAttribute('cx',px);hdc.setAttribute('cy',py);hdc.setAttribute('opacity',1);
+      mTT.className='tt'+(warn?' warn':'');mTT.style.opacity=1;
+      mTT.innerHTML='<div class="tt-t">'+tstr(p[0])+'</div><div class="tt-v">'+p[1].toFixed(2)+' ГиБ</div><div class="tt-h">до потолка: '+Math.max(0,CEIL-p[1]).toFixed(1)+' ГиБ</div>'
+        +'<div class="tt-h">RSS MariaDB '+(p[2]==null?'—':Math.round(p[2])+' МБ')+' · бридж '+(p[3]==null?'—':Math.round(p[3])+' МБ')+'</div>';
+      placeTT(mTT,mSvg,px,py,W1,H1);});
+    hit.addEventListener('pointerleave',leave);
+    const peak=d.reduce((a,p)=>p[1]>a[1]?p:a,d[0]),nowp=d[d.length-1];
+    const a=dt(t0),bb=dt(t1);
+    document.getElementById('mem-title').textContent='Память сервера — занято, '+(days<=CFG.kept.raw_days?'1-мин точки':'10-мин пики')+' · '+a.D+' '+MON[a.Mo]+' → '+bb.D+' '+MON[bb.Mo];
+    document.getElementById('mem-cap').innerHTML='Сейчас <b style="color:var(--ink)">'+fmtGi(nowp[1])+'</b> из '+fmtGi(CEIL)+' ('+Math.round(100*nowp[1]/CEIL)+'%) · пик '+perLbl(days)+' <b style="color:'+(peak[1]>=ZONE?'var(--crit)':'var(--ink)')+'">'+fmtGi(peak[1])+'</b> ('+tstr(peak[0])+')'
+      +' · RSS MariaDB '+(nowp[2]==null?'—':Math.round(nowp[2])+' МБ')+', бридж '+(nowp[3]==null?'—':Math.round(nowp[3])+' МБ');
+  }
+
+  // Размер базы на диске: ряд [ep, feed_bridge ГиБ, остальное MariaDB ГиБ, диск занят ГиБ].
+  // Стек-область: нижняя = feed_bridge, верхняя = остальной каталог MariaDB; ось Y = ёмкость диска.
+  function renderDisk(days){
+    const dSvg=document.getElementById('chart-disk'),dTT=document.getElementById('tt-disk');if(!dSvg)return;dSvg.innerHTML='';
+    const W4=1000,H4=340,M4={l:54,r:18,t:26,b:46},pw4=W4-M4.l-M4.r,ph4=H4-M4.t-M4.b;
+    const d=win(data(days),days).filter(r=>col(r,'db_gb')!=null&&col(r,'dsk_u')!=null)
+      .map(r=>[r[0],col(r,'db_gb'),Math.max(0,(col(r,'mdb_gb')!=null?col(r,'mdb_gb'):col(r,'db_gb'))-col(r,'db_gb')),col(r,'dsk_u')]);
+    if(d.length<2)return noData(dSvg,'disk-cap');
+    const t0=d[0][0],t1=d[d.length-1][0];
+    const CAP=(CFG.cur&&CFG.cur.dsk_t)||d.reduce((m,p)=>Math.max(m,p[3]),0)*1.12;
+    const YMAX=Math.max(10,CAP);
+    const x=t=>M4.l+(t-t0)/(t1-t0)*pw4, y=v=>M4.t+(1-Math.min(v,YMAX)/YMAX)*ph4, yb=M4.t+ph4;
+    const nstep=niceStep(YMAX),gl=[];for(let v=0;v<YMAX*0.96;v+=nstep)gl.push(v);gl.push(YMAX);
+    gl.forEach(v=>{const yy=y(v),isCap=v===YMAX;
+      dSvg.appendChild(el('line',{x1:M4.l,x2:M4.l+pw4,y1:yy,y2:yy,stroke:isCap?'var(--crit)':'var(--grid)','stroke-width':isCap?1.2:1,'stroke-dasharray':isCap?'6 5':'0'}));
+      const tx=el('text',{x:M4.l-9,y:yy+3.5,'text-anchor':'end','font-size':11.5,fill:isCap?'var(--crit)':'var(--muted)','font-weight':isCap?650:500});tx.textContent=Math.round(v);dSvg.appendChild(tx);});
+    const yl=el('text',{x:M4.l-9,y:M4.t-11,'text-anchor':'end','font-size':10.5,fill:'var(--muted)','font-weight':600});yl.textContent='ГиБ';dSvg.appendChild(yl);
+    timeAxis(dSvg,d,x,M4,ph4,days);
+    const defs=el('defs',{});
+    const g4=el('linearGradient',{id:'gdisk',x1:0,y1:0,x2:0,y2:1});
+    g4.appendChild(el('stop',{offset:0,'stop-color':'var(--series4)','stop-opacity':.34}));
+    g4.appendChild(el('stop',{offset:1,'stop-color':'var(--series4)','stop-opacity':.03}));
+    const g4s=el('linearGradient',{id:'gdisksys',x1:0,y1:0,x2:0,y2:1});
+    g4s.appendChild(el('stop',{offset:0,'stop-color':'var(--series4)','stop-opacity':.20}));
+    g4s.appendChild(el('stop',{offset:1,'stop-color':'var(--series4)','stop-opacity':.06}));
+    defs.appendChild(g4);defs.appendChild(g4s);dSvg.appendChild(defs);
+    let ad='M'+x(t0)+' '+yb;d.forEach(p=>ad+=' L'+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1));ad+=' L'+x(t1)+' '+yb+' Z';
+    dSvg.appendChild(el('path',{d:ad,fill:'url(#gdisk)'}));
+    let asu='M'+x(t0)+' '+y(d[0][1]+d[0][2]);
+    d.forEach(p=>asu+=' L'+x(p[0]).toFixed(1)+' '+y(p[1]+p[2]).toFixed(1));
+    for(let i=d.length-1;i>=0;i--)asu+=' L'+x(d[i][0]).toFixed(1)+' '+y(d[i][1]).toFixed(1);
+    dSvg.appendChild(el('path',{d:asu+' Z',fill:'url(#gdisksys)'}));
+    let lu='M'+x(t0)+' '+y(d[0][1]);d.forEach(p=>lu+=' L'+x(p[0]).toFixed(1)+' '+y(p[1]).toFixed(1));
+    dSvg.appendChild(el('path',{d:lu,fill:'none',stroke:'var(--series4)','stroke-width':1.5,'stroke-linejoin':'round'}));
+    let lt='M'+x(t0)+' '+y(d[0][1]+d[0][2]);d.forEach(p=>lt+=' L'+x(p[0]).toFixed(1)+' '+y(p[1]+p[2]).toFixed(1));
+    dSvg.appendChild(el('path',{d:lt,fill:'none',stroke:'var(--series4)','stroke-width':1.1,opacity:.5,'stroke-dasharray':'4 3','stroke-linejoin':'round'}));
+    let ld='M'+x(t0)+' '+y(d[0][3]);d.forEach(p=>ld+=' L'+x(p[0]).toFixed(1)+' '+y(p[3]).toFixed(1));
+    dSvg.appendChild(el('path',{d:ld,fill:'none',stroke:'var(--ink-2)','stroke-width':1.4,'stroke-linejoin':'round'}));
+    const du=d[d.length-1][3];
+    const dl=el('text',{x:M4.l+pw4-4,y:y(du)-5,'text-anchor':'end','font-size':11,fill:'var(--ink-2)','font-weight':600});dl.textContent='диск занят '+fmtGi(du);dSvg.appendChild(dl);
+    const cl=el('text',{x:M4.l+pw4-4,y:y(YMAX)+14,'text-anchor':'end','font-size':11,fill:'var(--crit)','font-weight':650});cl.textContent='ёмкость '+fmtGi(CAP);dSvg.appendChild(cl);
+    const cross=el('line',{x1:0,x2:0,y1:M4.t,y2:M4.t+ph4,stroke:'var(--ink-2)','stroke-width':1,opacity:0});
+    const hdc=el('circle',{r:4.5,fill:'var(--series4)',stroke:'var(--surface)','stroke-width':2,opacity:0});
+    dSvg.appendChild(cross);dSvg.appendChild(hdc);
+    const hit=el('rect',{x:M4.l,y:M4.t,width:pw4,height:ph4,fill:'transparent'});dSvg.appendChild(hit);
+    const leave=()=>{cross.setAttribute('opacity',0);hdc.setAttribute('opacity',0);dTT.style.opacity=0;};
+    hit.addEventListener('pointermove',e=>{const r=dSvg.getBoundingClientRect(),sx=(e.clientX-r.left)/r.width*W4,sy=(e.clientY-r.top)/r.height*H4;
+      if(sx<M4.l||sx>M4.l+pw4)return leave();
+      const p=near(d,t0+(sx-M4.l)/pw4*(t1-t0)),px=x(p[0]),tot=p[1]+p[2];
+      const ser=[{n:'feed_bridge',v:p[1],c:'var(--series4)'},{n:'MariaDB всего',v:tot,c:'var(--series4)'},{n:'диск занят',v:p[3],c:'var(--ink-2)'}];
+      let bi=1,bd=Infinity;ser.forEach((s,i)=>{const dy=Math.abs(y(s.v)-sy);if(dy<bd){bd=dy;bi=i;}});
+      const best=ser[bi],py=y(best.v);
+      cross.setAttribute('x1',px);cross.setAttribute('x2',px);cross.setAttribute('opacity',.5);
+      hdc.setAttribute('cx',px);hdc.setAttribute('cy',py);hdc.setAttribute('fill',best.c);hdc.setAttribute('opacity',1);
+      dTT.className='tt';dTT.style.opacity=1;
+      dTT.innerHTML='<div class="tt-t">'+tstr(p[0])+'</div>'
+        +'<div class="tt-v" style="color:'+best.c+'">'+best.n+' '+fmtGi(best.v)+'</div>'
+        +'<div class="tt-h">'+ser.filter((s,i)=>i!==bi).map(s=>s.n+' '+fmtGi(s.v)).join(' · ')+'</div>'
+        +'<div class="tt-h">остальное MariaDB '+fmtGi(p[2])+' · свободно '+fmtGi(CAP-p[3])+'</div>';
+      placeTT(dTT,dSvg,px,py,W4,H4);});
+    hit.addEventListener('pointerleave',leave);
+    const a=dt(t0),bb=dt(t1);
+    document.getElementById('disk-title').textContent='Размер базы на диске — feed_bridge + остальное MariaDB · '+a.D+' '+MON[a.Mo]+' → '+bb.D+' '+MON[bb.Mo];
+    const nowp=d[d.length-1],growth=nowp[1]-d[0][1];
+    document.getElementById('disk-cap').innerHTML='Сейчас feed_bridge <b style="color:var(--ink)">'+fmtGi(nowp[1])+'</b> (MariaDB всего '+fmtGi(nowp[1]+nowp[2])+') · рост базы за '+perLbl(days)+' <b style="color:'+(growth>=0?'var(--series4)':'var(--good)')+'">'+(growth>=0?'+':'')+growth.toFixed(2)+' ГиБ</b>'
+      +' · диск занят '+fmtGi(nowp[3])+' / '+fmtGi(CAP)+' ('+Math.round(100*nowp[3]/CAP)+'%) · свободно <b style="color:var(--good)">'+fmtGi(CAP-nowp[3])+'</b>'
+      +((CFG.d24&&CFG.d24.growth_gb!=null)?' · темп '+(CFG.d24.growth_gb>=0?'+':'')+CFG.d24.growth_gb.toFixed(2)+' ГиБ/сут'+(CFG.d24.growth_gb>0?', запаса на ~'+Math.round((CAP-nowp[3])/CFG.d24.growth_gb)+' сут':''):'');
+  }
+
+  // ---------- графики ----------
+  function renderAll(days){
+    const T=CFG.thr;
+    strip(days);
+    renderCpu(days);renderMem(days);renderDisk(days);
+    chart({svg:'c0',tt:'tt0',cap:'c0-cap',title:'Готовность приёма ставок',days,
+      series:[{k:'glag',name:'свежесть данных',kind:'area',color:'var(--series3)',fmt:fmtS},
+              {k:'gsil',name:'тишина в потоке',kind:'line',color:'var(--series2)',fmt:fmtS},
+              {k:'ghb',name:'heartbeat BetGate',kind:'line',color:'var(--series6)',fmt:fmtS}],
+      y:{unit:'сек',minmax:GT.lag_crit*1.4},
+      thr:[{v:GT.lag_warn,label:'свежесть WARN '+fmtS(GT.lag_warn)},
+           {v:GT.silence_crit,label:'тишина SUSPEND '+fmtS(GT.silence_crit),color:'var(--series2)',soft:true},
+           {v:GT.lag_crit,label:'SUSPEND '+fmtS(GT.lag_crit)+' — свежесть и heartbeat',color:'var(--crit)'}],
+      spike:r=>col(r,'gs')===2,
+      ttExtra:r=>{const v=col(r,'gs');return 'гейт: <b style="color:'+(v==null?'var(--muted)':GC[v])+'">'+(v==null?'нет данных':GN[v])+'</b>'+(col(r,'gage')!=null&&col(r,'gage')>60?' · состояние устарело на '+fmtS(col(r,'gage')):'');},
+      capFn:(d,dd)=>{const l=stat(d,'glag'),s=stat(d,'gsil'),sus=d.filter(r=>col(r,'gs')===2).length;
+        const cur=CFG.cur&&CFG.cur.gs;
+        return 'Сейчас '+b(cur==null?'—':GN[cur],cur==null?'var(--muted)':GC[cur])
+          +' · свежесть '+b(fmtS(l?l.last:null))+' · пик свежести за '+perLbl(dd)+' '+b(fmtS(l?l.max:null),l&&l.max>=GT.lag_crit?'var(--crit)':'var(--ink)')
+          +' · макс. тишина '+b(fmtS(s?s.max:null),s&&s.max>=GT.silence_crit?'var(--crit)':'var(--ink)')
+          +' · точек с закрытым приёмом: '+b(sus,sus?'var(--crit)':'var(--ink)');}});
+    chart({svg:'c1',tt:'tt1',cap:'c1-cap',title:'Поток сообщений очереди '+CFG.queue,days,
+      series:[{k:'pub',name:'publish',kind:'area',color:'var(--series)',fmt:v=>Math.round(v)+' msg/s'},{k:'ack',name:'ack',kind:'line',color:'var(--series2)',fmt:v=>Math.round(v)+' msg/s'}],
+      y:{unit:'msg/s'},ttExtra:r=>'deliver '+(col(r,'dlv')==null?'—':Math.round(col(r,'dlv')))+' msg/s · в очереди '+fmtN(col(r,'ready')),
+      capFn:(d,dd)=>{const p=stat(d,'pub'),a=stat(d,'ack');return 'Сейчас publish '+b(p?Math.round(p.last):'—')+' · ack '+b(a?Math.round(a.last):'—')+' msg/s · среднее за '+perLbl(dd)+' publish '+(p?Math.round(p.avg):'—')+' / ack '+(a?Math.round(a.avg):'—')+' · пик ack '+b(a?Math.round(a.max):'—','var(--series2)');}});
+    chart({svg:'c2',tt:'tt2',cap:'c2-cap',title:'Отставание бриджа от очереди',days,
+      series:[{k:'lag',name:'отставание',kind:'area',color:'var(--series3)',fmt:fmtS}],
+      y:{unit:'сек',minmax:T.lag_warn*1.5},thr:[{v:T.lag_warn,label:'WARN '+fmtS(T.lag_warn)},{v:T.lag_crit,label:'CRIT '+fmtS(T.lag_crit),color:'var(--crit)',soft:true}],
+      spike:r=>col(r,'lag')!=null&&col(r,'lag')>=T.lag_crit,
+      ttExtra:r=>'в очереди '+fmtN(col(r,'ready'))+' сообщ. · консьюмеров '+(col(r,'cons')==null?'—':col(r,'cons')),
+      capFn:(d,dd)=>{const s=stat(d,'lag'),m=maxRow(d,'lag');const over=d.filter(r=>col(r,'lag')!=null&&col(r,'lag')>=T.lag_warn).length;return 'Сейчас '+b(fmtS(s?s.last:null))+' · пик '+perLbl(dd)+' '+b(fmtS(s?s.max:null),s&&s.max>=T.lag_warn?'var(--crit)':'var(--ink)')+(m?' ('+tstr(m[0])+')':'')+' · точек ≥ WARN: '+over;}});
+    chart({svg:'c3',tt:'tt3',cap:'c3-cap',title:'Свежесть данных',days,
+      series:[{k:'wage',name:'с последней записи в БД',kind:'area',color:'var(--series2)',fmt:fmtS},{k:'sage',name:'heartbeat фида',kind:'line',color:'var(--series6)',fmt:fmtS}],
+      y:{unit:'сек',minmax:T.wage_warn*1.5},thr:[{v:T.wage_warn,label:'WARN '+fmtS(T.wage_warn)}],
+      spike:r=>col(r,'wage')!=null&&col(r,'wage')>=T.wage_crit,
+      ttExtra:r=>'латентность: MySQL '+(col(r,'my_ms')==null?'—':col(r,'my_ms')+' мс')+' · Redis '+(col(r,'rd_ms')==null?'—':col(r,'rd_ms')+' мс'),
+      capFn:(d,dd)=>{const w=stat(d,'wage'),s=stat(d,'sage');return 'Сейчас запись '+b(fmtS(w?w.last:null))+' назад · heartbeat '+b(fmtS(s?s.last:null))+' · худшее за '+perLbl(dd)+': запись '+b(fmtS(w?w.max:null),w&&w.max>=T.wage_warn?'var(--crit)':'var(--ink)')+', heartbeat '+fmtS(s?s.max:null);}});
+    chart({svg:'c4',tt:'tt4',cap:'c4-cap',title:'Live-события: Redis и их копии в MySQL',days,
+      series:[{k:'live_r',name:'в Redis',kind:'area',color:'var(--series5)',w:1.4},{k:'live_db',name:'совпало в MySQL',kind:'line',color:'var(--series)',w:1.8},{k:'live_miss',name:'не дошло до БД',kind:'bars',color:'var(--warn)'}],
+      y:{unit:'событий'},spike:r=>col(r,'live_miss')!=null&&col(r,'live_miss')>T.live_miss_warn,
+      ttExtra:r=>'догнали за 3 с '+(col(r,'live_late')==null?'—':col(r,'live_late'))+' · зомби в БД '+(col(r,'live_zomb')==null?'—':col(r,'live_zomb'))+' · prematch: совпало '+fmtN(col(r,'pre_db'))+' из '+fmtN(col(r,'pre_r'))+(col(r,'pre_miss')?' (не дошло '+col(r,'pre_miss')+')':'')+' · self-report фида live '+(col(r,'live_srv')==null?'—':col(r,'live_srv')),
+      capFn:(d,dd)=>{const a=stat(d,'live_db'),r=stat(d,'live_r'),m=stat(d,'live_miss'),z=stat(d,'live_zomb');const late=d.reduce((s,x)=>s+(col(x,'live_late')||0),0);const over=d.filter(x=>col(x,'live_miss')!=null&&col(x,'live_miss')>T.live_miss_warn).length;return 'Сейчас в Redis '+b(r?r.last:'—','var(--series5)')+', совпало в MySQL '+b(a?a.last:'—')+' · пик live за '+perLbl(dd)+' '+(r?r.max:'—')+' · макс. «не дошло» '+b(m==null?'—':m.max,over?'var(--warn)':'var(--ink)')+' · точек выше порога: '+over+' · догнали за 3 с (латентность бриджа): '+late+' · зомби в БД сейчас '+(z?z.last:'—');}});
+    chart({svg:'c5',tt:'tt5',cap:'c5-cap',title:'Вставки в базу',days,H:280,
+      series:[{k:'ins_oc',name:'исходов/мин',kind:'area',color:'var(--series4)',fmt:v=>fmtN(v)+'/мин'},{k:'ins_mk',name:'маркетов/мин',kind:'line',color:'var(--series3)',fmt:v=>fmtN(v)+'/мин'}],
+      y:{unit:'строк/мин'},ttExtra:r=>'событий '+(col(r,'ins_ev')==null?'—':fmtN(col(r,'ins_ev')))+'/мин',
+      capFn:(d,dd)=>{const o=stat(d,'ins_oc'),m=stat(d,'ins_mk');return 'Среднее за '+perLbl(dd)+': исходов '+b(o?fmtN(o.avg):'—','var(--series4)')+'/мин, маркетов '+b(m?fmtN(m.avg):'—','var(--series3)')+'/мин · пик исходов '+(o?fmtN(o.max):'—')+'/мин · за сутки ≈ '+(o?fmtN(o.avg*1440):'—')+' исходов и '+(m?fmtN(m.avg*1440):'—')+' маркетов';}});
+    chart({svg:'c6',tt:'tt6',cap:'c6-cap',title:'Ресурсы процесса бриджа',days,
+      series:[{k:'mem',name:'RSS',kind:'area',color:'var(--series6)',fmt:v=>Math.round(v)+' МБ'},{k:'cpu',name:'CPU',kind:'line',color:'var(--series)',ax:2,fmt:v=>v.toFixed(0)+' %'}],
+      y:{unit:'МБ',minmax:T.mem_warn_mb*1.1},y2:{unit:'% ядра',max:100},thr:[{v:T.mem_warn_mb,label:'порог '+T.mem_warn_mb+' МБ'}],
+      ttExtra:r=>'loadavg сервера '+(col(r,'load')==null?'—':col(r,'load'))+(col(r,'svc')===0?' · <b style="color:var(--crit)">сервис не активен</b>':''),
+      capFn:(d,dd)=>{const m=stat(d,'mem'),c=stat(d,'cpu');return 'Сейчас RSS '+b(m?Math.round(m.last)+' МБ':'—')+' · CPU '+b(c?c.last.toFixed(0)+' %':'—')+' · за '+perLbl(dd)+': RSS макс '+(m?Math.round(m.max):'—')+' МБ, CPU среднее '+(c?c.avg.toFixed(0):'—')+' % / пик '+(c?c.max.toFixed(0):'—')+' %';}});
+  }
+
+  // ---------- период, автообновление ----------
+  let days=3;try{const s=localStorage.getItem('feedhealth.days');if(s==='15'||s==='3')days=+s;}catch(e){}
+  const btns=[...document.querySelectorAll('.seg-btn')];
+  const apply=()=>{btns.forEach(x=>x.classList.toggle('on',+x.dataset.days===days));renderAll(days);};
+  btns.forEach(x=>x.addEventListener('click',()=>{days=+x.dataset.days;try{localStorage.setItem('feedhealth.days',String(days));}catch(e){}apply();}));
+  tiles();sweep();events();queues();apply();
+  try{const y=sessionStorage.getItem('feedhealth.scroll');if(y)window.scrollTo(0,+y);}catch(e){}
+  setInterval(()=>{try{sessionStorage.setItem('feedhealth.scroll',String(window.scrollY));}catch(e){}location.reload();},60000);
+})();
+</script>

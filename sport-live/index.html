@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sportsbook — Paryajpam (live)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/main.css?v=35" />
+</head>
+<body>
+  <header class="sb-header">
+    <div class="sb-header__logo">PARYAJPAM<span class="sb-header__logo-sub"> · SPORT</span></div>
+    <span class="sb-header__spacer"></span>
+    <div id="sb-lang" class="sb-lang"></div>
+    <span id="sb-conn" class="sb-conn" data-i18n-title="conn_title">Live</span>
+    <div id="sb-balance" class="sb-header__balance" data-i18n-title="balance_title">…</div>
+  </header>
+
+  <main class="sb-layout">
+    <aside id="sb-sidebar" class="sb-sidebar"></aside>
+
+    <section class="sb-layout__main">
+      <div id="sb-hot"><div class="sb-skel-wrap"><div class="sb-skel sb-skel--block"></div></div></div>
+      <div id="sb-live"><div class="sb-skel-wrap"><div class="sb-skel sb-skel--row"></div><div class="sb-skel sb-skel--row"></div><div class="sb-skel sb-skel--row"></div></div></div>
+    </section>
+
+    <aside id="sb-slip" class="sb-slip"></aside>
+  </main>
+
+  <!-- Mobile FAB и backdrop (на десктоп — скрыты CSS-ом) -->
+  <button id="sb-fab" class="sb-slip-fab" data-i18n-aria="coupon" aria-label="Купон">
+    🎟️ <span id="sb-fab-badge" class="sb-slip-fab__badge"></span>
+  </button>
+  <div id="sb-slip-backdrop" class="sb-slip-backdrop"></div>
+
+  <!-- Мобильная нижняя навигация (на десктопе скрыта CSS-ом) -->
+  <nav id="sb-mnav" class="sb-mnav">
+    <a class="sb-mnav__it" href="index.html" data-mnav="live"><span class="sb-mnav__ic">🔴</span><span data-i18n="tab_live">Лайв</span></a>
+    <a class="sb-mnav__it" href="line.html" data-mnav="line"><span class="sb-mnav__ic">📅</span><span data-i18n="tab_line">Линия</span></a>
+    <button class="sb-mnav__it" type="button" data-mnav="coupon"><span class="sb-mnav__ic">🎟️</span><span data-i18n="coupon">Купон</span><span id="sb-mnav-badge" class="sb-mnav__badge" hidden></span></button>
+    <button class="sb-mnav__it" type="button" data-mnav="bets"><span class="sb-mnav__ic">🧾</span><span data-i18n="nav_bets">Ставки</span></button>
+  </nav>
+
+  <script>window.__SB_LOGOS__ = {};</script>
+  <script src="https://cdn.jsdelivr.net/npm/centrifuge@5.3.5/dist/centrifuge.js"></script>
+  <script src="assets/js/i18n.js?v=9"></script>
+  <script src="assets/js/live-data.js?v=26"></script>
+  <script src="assets/js/main.js?v=36"></script>
+  <script>window.SBInit('live');</script>
+</body>
+</html>

@@ -1,0 +1,36 @@
+{
+  "http_server": { "address": "127.0.0.1", "port": 8000 },
+  "log": { "level": "info" },
+  "client": {
+    "allowed_origins": ["https://<your-site>"],
+    "allow_anonymous_connect_without_token": true,
+    "token": { "hmac_secret_key": "<generated-by-centrifugo-genconfig>" }
+  },
+  "channel": {
+    "namespaces": [
+      {
+        "name": "sport",
+        "allow_subscribe_for_anonymous": true,
+        "allow_subscribe_for_client": true,
+        "history_size": 500,
+        "history_ttl": "60s",
+        "force_recovery": true
+      },
+      {
+        "name": "event",
+        "allow_subscribe_for_anonymous": true,
+        "allow_subscribe_for_client": true,
+        "history_size": 300,
+        "history_ttl": "60s",
+        "force_recovery": true
+      }
+    ]
+  },
+  "http_api": { "key": "<generated-by-centrifugo-genconfig>" },
+  "admin": {
+    "enabled": true,
+    "password": "<generated-by-centrifugo-genconfig>",
+    "secret": "<generated-by-centrifugo-genconfig>"
+  },
+  "prometheus": { "enabled": true }
+}

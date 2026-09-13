@@ -1,0 +1,54 @@
+{
+  "redis": {
+    "host": "<redis-host>",
+    "port": 16380,
+    "password": "<redis-password>",
+    "db": 0
+  },
+  "rabbitmq": {
+    "host": "<rabbitmq-host>",
+    "port": 5672,
+    "username": "<rabbitmq-user>",
+    "password": "<rabbitmq-password>",
+    "vhost": "/",
+    "queue": "<your-queue-name>",
+    "management_url": "http://<rabbitmq-host>:15672"
+  },
+  "mysql": {
+    "host": "127.0.0.1",
+    "port": 3306,
+    "user": "<mysql-user>",
+    "password": "<mysql-password>",
+    "database": "feed_bridge",
+    "charset": "utf8mb4"
+  },
+  "centrifugo": {
+    "enabled": false,
+    "api_url": "http://127.0.0.1:8000/api",
+    "api_key": "<centrifugo-http-api-key>",
+    "batch_ms": 200,
+    "batch_max": 500,
+    "timeout": 2.0,
+    "retry_s": 5.0
+  },
+  "gate": {
+    "enabled": true,
+    "lag_warn": 10,
+    "lag_crit": 30,
+    "silence_crit": 15,
+    "qlag_crit": 30,
+    "hb_crit": 30,
+    "reopen_hold": 30,
+    "poll_slow": 10,
+    "state_file": "/var/lib/feed-health/gate.json"
+  },
+  "sweep": {
+    "expire_hours": 24,
+    "retention_days": 7,
+    "chunk": 1000,
+    "purge_chunk": 200,
+    "pause_ms": 100,
+    "anomaly_max_share": 0.2,
+    "state_file": "/var/lib/feed-health/sweep.json"
+  }
+}

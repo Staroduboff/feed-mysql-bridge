@@ -1,0 +1,935 @@
+/*
+ * sportsbook-iframe — дизайн 01 «Пижама-фирменный».
+ * Палитра 1-в-1 с freeman/gameportal/frontend/tailwind.config.js:
+ *   background #031228, table #1F3549, stroke #3B596A, foreground #7495A6,
+ *   secondText #88ADBF, mainText #C7E1EE, brand #ffd100, headerText #ffdc45,
+ *   orangeGradient #FFF051 → #FFB62F (главный CTA),
+ *   green #6EF683, red #F4245F, lemon #FCE923. Шрифт Poppins.
+ */
+
+:root {
+  --bg:          #031228;
+  --table:       #1F3549;
+  --table-2:     #243d54;          /* hover/even row */
+  --stroke:      #3B596A;
+  --foreground:  #7495A6;
+  --secondText:  #88ADBF;
+  --mainText:    #C7E1EE;
+  --brand:       #ffd100;
+  --headerText:  #ffdc45;
+  --grad-start:  #FFF051;
+  --grad-end:    #FFB62F;
+  --green:       #6EF683;
+  --red:         #F4245F;
+  --orange:      #F24C3E;
+  --lemon:       #FCE923;
+  /* подсветка активных кнопок — просто жёлтая, без градиента и внутренней тени (правка 08.09) */
+  --gradient-cta: var(--brand);
+  --shadow-cta:  0 4px 16px -6px rgba(255,182,47,0.55);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  font-family: 'Poppins', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  font-size: 14px; line-height: 1.28;
+  background: var(--bg);                       /* ровный фон, без радиального градиента мока */
+  color: var(--mainText);
+  min-height: 100vh;
+}
+/* Водяной знак бренда на фоне (выбран владельцем 10.09 из семи вариантов): вертикальная надпись
+   PARYAJPAM вдоль правого края и SPORT рядом, закреплены при прокрутке, лежат под всем контентом
+   (z-index −1). Фон body прозрачный — иначе он перекрыл бы псевдоэлементы; цвет страницы даёт html. */
+body { background: transparent; }
+body::before, body::after {
+  position: fixed; bottom: 24px; z-index: -1; pointer-events: none; user-select: none;
+  writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap;
+}
+body::before { content: 'PARYAJPAM'; right: 6px; font: 800 140px/1 'Poppins', system-ui, sans-serif; letter-spacing: 2px; color: rgba(255,209,0,0.05); }
+body::after  { content: 'SPORT'; right: 150px; font: 700 54px/1 'Poppins', system-ui, sans-serif; letter-spacing: 18px; color: rgba(199,225,238,0.055); }
+@media (max-width: 760px) { body::before, body::after { display: none; } }
+
+a { color: var(--headerText); text-decoration: none; }
+button { font-family: inherit; cursor: pointer; }
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--stroke); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--foreground); }
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+.sb-header {
+  position: sticky; top: 0; z-index: 50;
+  display: flex; align-items: center; gap: 16px;
+  padding: 9px 20px;
+  background: rgba(3,18,40,0.85);
+  backdrop-filter: blur(10px) saturate(140%);
+  border-bottom: 1px solid rgba(59,89,106,0.6);
+}
+.sb-header__logo {
+  font-weight: 700; font-size: 18px; letter-spacing: 0.5px;
+  background: linear-gradient(135deg, var(--brand), var(--headerText));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.sb-header__nav { display: flex; gap: 4px; margin-left: 24px; flex: 1; flex-wrap: wrap; }
+.sb-header__nav a {
+  padding: 8px 14px; border-radius: 8px;
+  color: var(--secondText); font-weight: 500;
+  transition: color .15s, background .15s;
+}
+.sb-header__nav a:hover { color: var(--mainText); background: rgba(59,89,106,0.25); }
+.sb-header__nav a.active {
+  color: var(--bg);
+  background: var(--gradient-cta);
+  box-shadow: var(--shadow-cta);
+}
+.sb-header__spacer { flex: 1; }
+
+.sb-header__balance {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px 14px; border-radius: 8px;
+  background: rgba(31,53,73,0.7); border: 1px solid var(--stroke);
+  font-weight: 600; color: var(--brand);
+}
+.sb-header__balance::before {
+  content: ''; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--green); box-shadow: 0 0 8px var(--green);
+}
+
+/* ─── Layout ─────────────────────────────────────────────────────────────── */
+.sb-layout {
+  display: grid;
+  grid-template-columns: 220px 1fr 340px;
+  gap: 12px;
+  padding: 13px 18px;
+  max-width: 1680px; margin: 0 auto;
+}
+.sb-layout__main { min-width: 0; display: flex; flex-direction: column; gap: 11px; }
+
+/* ─── Sidebar (sports + leagues) ─────────────────────────────────────────── */
+.sb-sidebar {
+  background: linear-gradient(180deg, rgba(31,53,73,0.7), rgba(31,53,73,0.4));
+  border: 1px solid rgba(59,89,106,0.55);
+  border-radius: 14px; padding: 8px;
+  display: flex; flex-direction: column; gap: 3px;
+  height: max-content; position: sticky; top: 64px;
+  max-height: calc(100vh - 82px); overflow-y: auto;
+}
+.sb-sidebar__title {
+  font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+  color: var(--foreground); padding: 5px 10px 3px;
+}
+.sb-sport {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 10px; border-radius: 9px;
+  color: var(--secondText); font-weight: 500;
+  cursor: pointer; user-select: none;
+  transition: background .12s, color .12s;
+}
+.sb-sport:hover { background: rgba(59,89,106,0.3); color: var(--mainText); }
+.sb-sport.open { color: var(--mainText); }
+.sb-sport.active {
+  background: linear-gradient(90deg, rgba(255,209,0,0.18), rgba(255,209,0,0.04));
+  color: var(--brand);
+  border-left: 2px solid var(--brand); padding-left: 8px;
+}
+.sb-sport__icon { font-size: 18px; line-height: 1; }
+.sb-sport__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-sport__count {
+  margin-left: auto;
+  background: rgba(116,149,166,0.18); color: var(--secondText);
+  padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+}
+/* Переключатель «Лайв / Линия» над списком видов спорта. Это разные страницы, поэтому ссылки,
+   а не кнопки: работают средняя кнопка мыши, «открыть в новой вкладке» и история браузера. */
+.sb-tabs { display: flex; gap: 4px; padding: 2px 2px 7px; }
+.sb-tab {
+  flex: 1 1 0; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 7px 8px; border-radius: 9px; border: 1px solid var(--stroke);
+  background: rgba(3,18,40,0.35); color: var(--secondText);
+  font-size: 12.5px; font-weight: 600; text-decoration: none; white-space: nowrap;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.sb-tab:hover { color: var(--mainText); border-color: rgba(116,149,166,0.6); }
+.sb-tab__n { font-size: 11px; font-weight: 600; color: var(--foreground); }
+.sb-tab.active { background: var(--brand); border-color: var(--brand); color: var(--bg); }
+.sb-tab.active .sb-tab__n { color: rgba(3,18,40,0.62); }
+.sb-tab--live::before { content: ''; flex: none; width: 6px; height: 6px; border-radius: 50%; background: var(--red); }
+.sb-tab--live.active::before { background: var(--bg); }
+/* Лиги вида спорта (раскрываются по клику, как в 1xBet) */
+.sb-sport__chev { display: flex; align-items: center; color: var(--foreground); transition: transform .15s ease; }
+.sb-sport.open .sb-sport__chev { transform: rotate(90deg); }
+.sb-sport.active .sb-sport__chev { color: var(--brand); }
+.sb-leagues {
+  display: flex; flex-direction: column; gap: 1px;
+  margin: 1px 0 4px 13px; padding-left: 7px; border-left: 1px solid rgba(59,89,106,0.55);
+}
+.sb-league {
+  display: flex; align-items: center; gap: 8px; padding: 5px 8px; border-radius: 7px;
+  color: var(--foreground); font-size: 12.5px; cursor: pointer; user-select: none;
+  transition: background .12s, color .12s;
+}
+.sb-league:hover { background: rgba(59,89,106,0.3); color: var(--mainText); }
+.sb-league.active { background: rgba(255,209,0,0.12); color: var(--brand); }
+.sb-league__name { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sb-league__count { flex: none; font-size: 11px; font-weight: 600; color: var(--foreground); }
+.sb-league.active .sb-league__count { color: var(--brand); opacity: .75; }
+
+/* ─── Section block (Hot/Live/Prematch) ──────────────────────────────────── */
+.sb-section {
+  background: var(--table);
+  border: 1px solid rgba(59,89,106,0.55);
+  border-radius: 14px; overflow: hidden;
+}
+.sb-section__head {
+  display: flex; align-items: center; gap: 12px;
+  padding: 9px 16px;
+  border-bottom: 1px solid rgba(59,89,106,0.55);
+  background: linear-gradient(90deg, rgba(255,220,69,0.08), transparent);
+}
+.sb-section__title {
+  font-size: 15px; font-weight: 700; color: var(--mainText);
+  display: flex; align-items: center; gap: 10px;
+}
+.sb-section__title::before {
+  content: ''; width: 3px; height: 16px;
+  background: var(--gradient-cta); border-radius: 2px;
+}
+.sb-section--live .sb-section__title::before { background: var(--red); animation: pulse 1.6s ease-in-out infinite; }
+.sb-section--hot  .sb-section__title::before { background: var(--orange); }
+
+.sb-section__chip {
+  font-size: 11px; padding: 3px 9px; border-radius: 10px; font-weight: 600;
+}
+.sb-section__chip--live { background: rgba(244,36,95,0.18); color: var(--red); }
+.sb-section__chip--hot  { background: rgba(255,209,0,0.18); color: var(--brand); }
+.sb-section__count {
+  margin-left: auto; color: var(--secondText); font-size: 12px;
+}
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: .4; } }
+
+/* ─── Event row ──────────────────────────────────────────────────────────── */
+.sb-table { display: flex; flex-direction: column; }
+.sb-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1.4fr) 104px repeat(3, 1fr);
+  align-items: center; gap: 10px;
+  padding: 6px 16px; border-bottom: 1px solid rgba(59,89,106,0.35);
+  cursor: pointer; transition: background .12s;
+}
+.sb-row:hover { background: rgba(116,149,166,0.06); }
+.sb-row:last-child { border-bottom: none; }
+.sb-row__sport { font-size: 18px; line-height: 1; text-align: center; }
+.sb-row__teams {
+  display: flex; flex-direction: column; gap: 2px; min-width: 0;
+}
+.sb-row__league {
+  font-size: 11px; color: var(--foreground); white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.sb-row__match {
+  font-size: 13.5px; font-weight: 600; color: var(--mainText);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sb-row__time {
+  display: flex; flex-direction: column; gap: 2px; align-items: flex-start;
+  font-size: 11.5px;
+}
+.sb-row__period { font-weight: 600; color: var(--red); display: flex; align-items: center; gap: 5px; }
+.sb-row__period::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 1.6s ease-in-out infinite; }
+.sb-row__score   { font-weight: 700; color: var(--mainText); font-variant-numeric: tabular-nums; }
+.sb-row__start   { color: var(--secondText); font-size: 11px; }
+
+.sb-row__market-group { display: flex; flex-direction: column; gap: 2px; }
+.sb-row__market-name  { font-size: 9.5px; color: var(--foreground); text-transform: uppercase; letter-spacing: 0.5px; }
+.sb-row__odds         { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; }
+
+/* ─── Team logo / crest (реальное лого с Wikimedia + монограмма-фоллбэк) ──── */
+.sb-logo {
+  position: relative; display: inline-flex; flex: 0 0 auto;
+  border-radius: 50%; overflow: hidden; vertical-align: middle;
+  border: 1px solid rgba(59,89,106,0.45);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.25);
+}
+.sb-logo__mono {
+  position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: #fff; letter-spacing: 0.3px; line-height: 1;
+  background: linear-gradient(135deg, hsl(var(--h,210) 48% 44%), hsl(var(--h,210) 48% 26%));
+}
+.sb-logo__img {
+  position: relative; z-index: 1; width: 100%; height: 100%;
+  object-fit: contain; padding: 6%; box-sizing: border-box;   /* эмблемы team_logo не круглые — вписываем целиком */
+  background: rgba(255,255,255,0.92); display: block;
+}
+.sb-row__teams-line { display: flex; align-items: center; gap: 5px; min-width: 0; white-space: normal; }
+.sb-row__name {
+  font-size: 13.5px; font-weight: 600; color: var(--mainText);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 0 1 auto;
+}
+.sb-row__dash { color: var(--foreground); flex: 0 0 auto; margin: 0 1px; }
+.sb-slip__item-match .sb-logo { margin-right: 2px; }
+
+/* ─── Odd button ─────────────────────────────────────────────────────────── */
+.sb-odd {
+  position: relative;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 5px 6px; border-radius: 8px;
+  background: rgba(59,89,106,0.18); border: 1px solid rgba(59,89,106,0.4);
+  color: var(--mainText); transition: all .12s;
+  min-height: 34px;
+}
+.sb-odd:hover:not(.sb-odd--disabled) {
+  background: rgba(255,209,0,0.08); border-color: var(--brand); transform: translateY(-1px);
+}
+.sb-odd__label { font-size: 10.5px; color: var(--secondText); margin-bottom: 1px; }
+.sb-odd__value { font-size: 13px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.sb-odd--active {
+  background: var(--gradient-cta); color: var(--bg);
+  border-color: transparent; box-shadow: var(--shadow-cta);
+}
+.sb-odd--active .sb-odd__label,
+.sb-odd--active .sb-odd__value { color: var(--bg); }
+.sb-odd--disabled {
+  background: rgba(31,53,73,0.4); color: var(--foreground); cursor: not-allowed;
+  border-style: dashed; border-color: rgba(59,89,106,0.5);
+}
+.sb-odd--disabled .sb-odd__value { color: var(--foreground); }
+.sb-odd--disabled::after {
+  content: '🔒'; position: absolute; right: 4px; top: 3px; font-size: 9px; opacity: .8;
+}
+
+/* ─── Hot events — плитки «Топ линия» ───────────────────────────────────────
+   Композиция выбрана владельцем 11.09.2026 из шести вариантов (hot-lab.html) по мотивам
+   раздела «Топ линия» Olimpbet: логотипы команд внахлёст слева, названия в две строки,
+   счёт по строке на команду справа, исходы — подпись и цена в одну строку (П1 2.40).
+   Три плитки в ряд на десктопе (~110 px высоты вместо прежних ~200) и карусель на телефоне:
+   прежние крупные карточки в две колонки занимали до блока LIVE ~640 px и дублировали
+   его же события. */
+.sb-hot__list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 8px; padding: 10px 14px;
+}
+.sb-hot__card {
+  display: flex; flex-direction: column; gap: 8px;
+  padding: 10px 12px; border-radius: 12px; cursor: pointer;
+  background: rgba(59,89,106,0.13); border: 1px solid rgba(59,89,106,0.4);
+  transition: border-color .15s, transform .15s;
+}
+.sb-hot__card:hover { border-color: var(--brand); transform: translateY(-2px); }
+.sb-hot__top { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: var(--foreground); }
+.sb-hot__when { flex: 0 0 auto; color: var(--headerText); font-weight: 600; white-space: nowrap; }
+.sb-hot__when--live { color: var(--red); }
+.sb-hot__league { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-hot__pill {
+  flex: 0 0 auto; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 7px;
+  background: var(--red); color: #fff;
+}
+.sb-hot__mid { display: flex; align-items: center; gap: 10px; }
+.sb-hot__logos { display: flex; flex: 0 0 auto; }
+.sb-hot__logos .sb-logo:last-child { margin-left: -9px; }
+.sb-hot__names { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.sb-hot__names span {
+  font-size: 13px; font-weight: 600; color: var(--mainText);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sb-hot__score {
+  display: flex; flex-direction: column; align-items: flex-end; flex: 0 0 auto;
+  font-size: 13px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums;
+}
+.sb-hot__odds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: auto; }
+/* плашка исхода в плитке — подпись и цена в одну строку (в таблице ниже они в две) */
+.sb-odd--inline { flex-direction: row; gap: 6px; padding: 6px 4px; min-height: 30px; }
+.sb-odd--inline .sb-odd__label { margin-bottom: 0; }
+.sb-odd--inline .sb-odd__value { font-size: 12.5px; }
+.sb-odd--inline.sb-odd--disabled::after { display: none; }
+
+/* ─── Slip ───────────────────────────────────────────────────────────────── */
+.sb-slip {
+  position: sticky; top: 64px;
+  height: max-content; max-height: calc(100vh - 82px);
+  background: var(--table);
+  border: 1px solid rgba(59,89,106,0.55);
+  border-radius: 14px;
+  display: flex; flex-direction: column; overflow: hidden;
+}
+.sb-slip__head {
+  padding: 14px 16px; border-bottom: 1px solid rgba(59,89,106,0.5);
+  display: flex; align-items: center; gap: 10px;
+  background: linear-gradient(90deg, rgba(255,209,0,0.1), transparent);
+}
+.sb-slip__title { font-weight: 700; font-size: 15px; color: var(--mainText); }
+.sb-slip__count {
+  background: var(--gradient-cta); color: var(--bg);
+  font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+  box-shadow: var(--shadow-cta);
+}
+.sb-slip__clear {
+  margin-left: auto; background: none; border: none; color: var(--foreground);
+  font-size: 12px; padding: 4px 8px; border-radius: 6px;
+}
+.sb-slip__clear:hover { color: var(--red); background: rgba(244,36,95,0.08); }
+
+.sb-slip__list { padding: 8px; overflow-y: auto; max-height: 40vh; }
+.sb-slip__empty {
+  padding: 32px 16px; text-align: center; color: var(--foreground); font-size: 13px;
+}
+.sb-slip__empty-icon { font-size: 32px; margin-bottom: 8px; opacity: .5; }
+
+.sb-slip__item {
+  background: rgba(59,89,106,0.15); border: 1px solid rgba(59,89,106,0.3);
+  border-radius: 10px; padding: 10px; margin-bottom: 8px;
+  display: flex; flex-direction: column; gap: 4px;
+  position: relative;
+}
+.sb-slip__item-match { font-size: 12px; color: var(--secondText); }
+.sb-slip__item-market { font-size: 11px; color: var(--foreground); }
+.sb-slip__item-pick {
+  display: flex; align-items: center; gap: 8px; margin-top: 2px;
+}
+.sb-slip__item-pick-label { font-size: 13px; font-weight: 600; color: var(--mainText); }
+.sb-slip__item-pick-odds {
+  margin-left: auto; font-size: 14px; font-weight: 700; color: var(--brand);
+  font-variant-numeric: tabular-nums;
+}
+.sb-slip__item-remove {
+  position: absolute; top: 8px; right: 8px;
+  background: none; border: none; color: var(--foreground); font-size: 14px;
+  padding: 2px 6px; border-radius: 4px;
+}
+.sb-slip__item-remove:hover { color: var(--red); background: rgba(244,36,95,0.1); }
+
+.sb-slip__item--unavailable {
+  border-color: rgba(244,76,62,0.6); background: rgba(244,76,62,0.08);
+}
+.sb-slip__item--unavailable .sb-slip__item-pick-label { color: var(--orange); }
+.sb-slip__item--unavailable::before {
+  content: 'Сейчас недоступно';
+  display: block; font-size: 10px; color: var(--orange);
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.4px;
+  margin-bottom: 4px;
+}
+
+.sb-slip__foot {
+  padding: 14px 16px; border-top: 1px solid rgba(59,89,106,0.5);
+  background: rgba(3,18,40,0.5);
+  display: flex; flex-direction: column; gap: 10px;
+}
+.sb-slip__row { display: flex; justify-content: space-between; font-size: 12.5px; }
+.sb-slip__row span:first-child { color: var(--foreground); }
+.sb-slip__row span:last-child  { color: var(--mainText); font-weight: 600; font-variant-numeric: tabular-nums; }
+.sb-slip__row--total span:last-child { color: var(--green); font-size: 18px; font-weight: 800; }
+.sb-slip__stake-input {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(59,89,106,0.2); border: 1px solid var(--stroke);
+  border-radius: 10px; padding: 10px 12px;
+}
+.sb-slip__stake-input input {
+  flex: 1; background: none; border: none; outline: none;
+  color: var(--mainText); font-size: 16px; font-weight: 700;
+  font-family: inherit; font-variant-numeric: tabular-nums;
+}
+.sb-slip__stake-input span { color: var(--foreground); font-size: 13px; font-weight: 600; }
+/* поле суммы без спиннера браузера */
+.sb-slip__stake-input input::-webkit-outer-spin-button,
+.sb-slip__stake-input input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.sb-slip__stake-input input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+.sb-slip__stake-presets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.sb-slip__stake-presets button {
+  background: rgba(59,89,106,0.25); border: 1px solid rgba(59,89,106,0.4);
+  color: var(--secondText); font-size: 12px; font-weight: 600;
+  padding: 6px 0; border-radius: 8px;
+}
+.sb-slip__stake-presets button:hover { color: var(--brand); border-color: var(--brand); }
+.sb-slip__stake-presets button.active { color: var(--bg); background: var(--brand); border-color: var(--brand); }
+.sb-slip__notice { font-size: 11px; color: var(--orange); text-align: center; padding: 2px 0 4px; }
+.sb-slip__hint { font-size: 10.5px; color: var(--foreground); text-align: center; margin-top: 5px; }
+
+.sb-slip__cta {
+  background: var(--gradient-cta); color: var(--bg);
+  border: none; padding: 14px 18px; border-radius: 12px;
+  font-size: 15px; font-weight: 800; letter-spacing: 0.3px;
+  text-transform: uppercase;
+  box-shadow: var(--shadow-cta);
+  transition: transform .12s, opacity .12s;
+}
+.sb-slip__cta:hover { transform: translateY(-1px); }
+.sb-slip__cta:disabled {
+  background: rgba(59,89,106,0.5); color: var(--foreground);
+  cursor: not-allowed; box-shadow: none; transform: none;
+}
+
+/* ─── Event page (full markets) ──────────────────────────────────────────── */
+.sb-event-head {
+  background: var(--table); border: 1px solid rgba(59,89,106,0.55);
+  border-radius: 14px; padding: 16px 20px; display: flex; flex-direction: column; gap: 10px;
+  position: relative; overflow: hidden;
+}
+.sb-event-head::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(ellipse at top right, rgba(255,209,0,0.15) 0%, transparent 60%);
+  pointer-events: none;
+}
+.sb-event-head__meta { display: flex; align-items: center; gap: 10px; color: var(--secondText); font-size: 12px; }
+.sb-event-head__league { font-weight: 600; }
+.sb-event-head__live   { background: var(--red); color: white; padding: 2px 8px; border-radius: 8px; font-size: 10px; font-weight: 700; }
+.sb-event-head__teams  {
+  display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 20px;
+}
+.sb-event-head__team { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.sb-event-head__team-name { font-size: 22px; font-weight: 700; color: var(--mainText); margin-bottom: 4px; }
+.sb-event-head__team-meta { font-size: 11px; color: var(--foreground); }
+.sb-event-head__score {
+  font-size: 38px; font-weight: 800; color: var(--brand);
+  font-variant-numeric: tabular-nums; display: flex; align-items: center; gap: 12px;
+}
+.sb-event-head__period {
+  text-align: center; font-size: 12px; color: var(--red); font-weight: 600;
+  margin-top: -4px; display: flex; align-items: center; justify-content: center; gap: 6px;
+}
+.sb-event-head__period::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--red); animation: pulse 1.6s ease-in-out infinite; }
+
+.sb-markets { display: flex; flex-direction: column; gap: 8px; }
+.sb-market {
+  background: var(--table); border: 1px solid rgba(59,89,106,0.55); border-radius: 12px;
+  overflow: hidden;
+}
+.sb-market__head {
+  padding: 8px 14px; display: flex; align-items: center; gap: 10px;
+  background: rgba(59,89,106,0.15); cursor: pointer; user-select: none;
+}
+.sb-market__title { font-weight: 600; color: var(--mainText); font-size: 13.5px; }
+.sb-market__count { margin-left: auto; color: var(--foreground); font-size: 12px; }
+.sb-market__body {
+  padding: 9px 14px; display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 6px;
+}
+
+/* Кнопка купона и подложка нужны только на мобильном (ниже 760px): без базового правила
+   на десктопе <button> рендерился нестилизованным у левого края под контентом и был виден,
+   пока страница короткая (загрузка) — тот самый «светлый артефакт». */
+.sb-slip-fab, .sb-slip-backdrop, .sb-mnav { display: none; }
+/* Нижняя навигация телефона: лайв, линия, купон со счётчиком, мои ставки.
+   На узком экране заменяет и верхний переключатель лайв/линия, и плавающую кнопку купона. */
+.sb-mnav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 80;
+  background: rgba(3,18,40,0.97); border-top: 1px solid var(--stroke);
+  backdrop-filter: blur(10px); padding-bottom: env(safe-area-inset-bottom);
+}
+.sb-mnav__it {
+  position: relative; flex: 1 1 0; min-width: 0;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  padding: 8px 4px 9px; border: 0; background: none; cursor: pointer;
+  font-family: inherit; font-size: 10.5px; font-weight: 600; line-height: 1.15;
+  color: var(--foreground); text-decoration: none; white-space: nowrap;
+  transition: color .12s;
+}
+.sb-mnav__ic { font-size: 17px; line-height: 1; }
+.sb-mnav__it.active { color: var(--brand); }
+.sb-mnav__badge {
+  position: absolute; top: 3px; left: 50%; margin-left: 3px;
+  background: var(--red); color: #fff; font-size: 10px; font-weight: 700;
+  padding: 1px 6px; border-radius: 9px;
+}
+
+/* ─── Переходы между страницами ──────────────────────────────────────────── */
+/* Кросс-документный View Transition (Chrome 126+, Safari 18.2+): шапка и колонка купона
+   остаются на месте, контент плавно сменяется; остальные браузеры получают только
+   появление контента при загрузке (sbPageIn). */
+@view-transition { navigation: auto; }
+.sb-header { view-transition-name: sb-header; }
+.sb-slip { view-transition-name: sb-slip; }
+::view-transition-old(root) { animation: 160ms ease-out both sbVtOut; }
+::view-transition-new(root) { animation: 240ms ease-out both sbVtIn; }
+::view-transition-group(sb-header), ::view-transition-group(sb-slip) { animation-duration: 200ms; }
+@keyframes sbVtOut { to { opacity: 0; transform: translateY(-6px); } }
+@keyframes sbVtIn { from { opacity: 0; transform: translateY(8px); } }
+@keyframes sbPageIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.sb-layout__main { animation: sbPageIn .24s ease-out both; }
+@media (prefers-reduced-motion: reduce) { .sb-layout__main { animation: none; } ::view-transition-old(root), ::view-transition-new(root) { animation-duration: 1ms; } }
+
+/* Скелет загрузки: пока не пришли каталог и снимок, вместо пустых блоков — мерцающие плашки */
+@keyframes sbShimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.sb-skel { border-radius: 6px; background: linear-gradient(90deg, rgba(59,89,106,.16) 25%, rgba(59,89,106,.34) 50%, rgba(59,89,106,.16) 75%); background-size: 200% 100%; animation: sbShimmer 1.4s linear infinite; }
+.sb-skel--row { height: 44px; margin: 6px 12px; }
+.sb-skel--line { height: 12px; width: 60%; margin: 8px auto; }
+.sb-skel--circle { width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 8px; }
+.sb-skel--block { height: 96px; margin-bottom: 6px; border-radius: 7px; }
+.sb-skel--score { width: 90px; height: 34px; margin: 6px auto; }
+.sb-skel-wrap { padding: 12px; }
+
+/* ─── Mobile ─────────────────────────────────────────────────────────────── */
+@media (max-width: 1080px) {
+  .sb-layout { grid-template-columns: 200px 1fr; }
+  .sb-slip { display: none; }
+}
+@media (max-width: 760px) {
+  .sb-layout { grid-template-columns: 1fr; padding: 12px; gap: 12px; }
+  .sb-sidebar {
+    position: static; max-height: none; overflow-x: auto; overflow-y: hidden;
+    flex-direction: row; padding: 8px;
+  }
+  .sb-sidebar__title { display: none; }
+  .sb-sport { flex-direction: column; padding: 8px 10px; min-width: 70px; text-align: center; }
+  .sb-sport__count { display: none; }
+  /* узкий экран: сайдбар — липкая горизонтальная лента видов спорта. Лиги в неё не помещаются,
+     а переключатель лайв/линия не нужен — переключение страниц ушло в нижнюю панель. */
+  .sb-sport__chev, .sb-leagues, .sb-tabs { display: none; }
+  .sb-sport__name { flex: none; }
+  .sb-sidebar { position: sticky; top: 44px; z-index: 30; background: var(--table); }
+  body { padding-bottom: 62px; }                 /* под нижнюю панель */
+  .sb-mnav { display: flex; }
+  .sb-header__nav { display: none; }
+  .sb-header__balance { font-size: 12px; padding: 6px 10px; }
+  .sb-header { padding: 10px 14px; }
+
+  /* Компактная строка: слева команды, справа кэфы главного маркета и «+N» остальных.
+     Тотал, фора и разделители на телефоне не показываются (всё, что после первого
+     разделителя), поэтому строка влезает в экран без горизонтальной прокрутки. */
+  .sb-table--x { overflow-x: visible; }
+  .sb-table--x .sb-row { min-width: 0; }
+  .sb-table--x .sb-row__sep { display: none; }
+  .sb-table--x .sb-row--x .sb-row__sep ~ *:not(.sb-row__more) { display: none; }
+  .sb-table--x .sb-row--league .sb-row__sep ~ *:not(.sb-row__mkhead:last-child) { display: none; }
+  .sb-table--x .sb-row--league, .sb-table--x .sb-row--x {
+    display: flex; align-items: center; gap: 5px; padding: 7px 10px;
+  }
+  .sb-table--x .sb-row--x .sb-row__sport { display: none; }
+  .sb-table--x .sb-row--league .sb-row__sport { flex: 0 0 auto; }
+  .sb-table--x .sb-row__league-name { flex: 1 1 auto; min-width: 0; font-size: 12px; }
+  .sb-table--x .sb-row--x .sb-row__teams { flex: 1 1 auto; min-width: 0; }
+  .sb-table--x .sb-row__name { font-size: 13px; }
+  .sb-table--x .sb-row--league .sb-row__mkhead { flex: 0 0 47px; }
+  .sb-table--x .sb-row--x .sb-odd--cell,
+  .sb-table--x .sb-row--x .sb-odd--empty { flex: 0 0 47px; min-height: 36px; }
+  .sb-table--x .sb-row--x .sb-row__more-btn { flex: 1 1 auto; min-height: 36px; }
+  .sb-table--x .sb-row--league > .sb-row__mkhead:last-child,
+  .sb-table--x .sb-row--x > .sb-row__more:last-child {
+    display: flex; flex: 0 0 30px; align-items: center; justify-content: center; text-align: center;
+  }
+
+  .sb-section__head { padding: 12px 14px; }
+  .sb-section__title { font-size: 14px; }
+  /* Hot events — карусель со свайпом: плитки в столбик занимали бы два экрана
+     и отодвигали список матчей вниз */
+  .sb-hot__list {
+    display: flex; gap: 8px; padding: 10px 12px;
+    overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch;
+  }
+  .sb-hot__card { flex: 0 0 82%; scroll-snap-align: start; }
+
+  /* Mobile slip — bottom-sheet, FAB-кнопка снизу */
+  .sb-slip-fab {
+    position: fixed; right: 16px; bottom: 16px; z-index: 60;
+    width: 64px; height: 64px; border-radius: 50%; border: none;
+    background: var(--gradient-cta); color: var(--bg);
+    box-shadow: 0 10px 30px -8px rgba(255,182,47,0.6), var(--shadow-cta);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; font-weight: 800;
+    transition: transform .15s;
+  }
+  .sb-slip-fab:hover { transform: scale(1.05); }
+  .sb-slip-fab__badge {
+    position: absolute; top: -4px; right: -4px;
+    background: var(--red); color: white;
+    font-size: 11px; font-weight: 700;
+    padding: 2px 7px; border-radius: 10px;
+  }
+  .sb-slip {
+    display: none;
+    position: fixed; inset: auto 0 0 0; z-index: 70;
+    border-radius: 18px 18px 0 0; max-height: 80vh; height: auto;
+  }
+  .sb-slip.open { display: flex; bottom: 56px; }
+  .sb-slip__list { max-height: 50vh; }
+  .sb-slip-backdrop {
+    display: none;
+    position: fixed; inset: 0; z-index: 65;
+    background: rgba(0,0,0,0.6); backdrop-filter: blur(4px);
+  }
+  .sb-slip-backdrop.open { display: block; }
+  /* плавающая кнопка купона больше не нужна: купон открывается из нижней панели */
+  .sb-slip-fab { display: none; }
+
+  .sb-event-head__teams { grid-template-columns: 1fr; gap: 8px; }
+  .sb-event-head__team-name { font-size: 18px; }
+  .sb-event-head__score { font-size: 28px; justify-content: center; }
+  .sb-market__body { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Small toast */
+.sb-toast {
+  position: fixed; bottom: 96px; left: 50%; transform: translateX(-50%);
+  background: rgba(31,53,73,0.95); border: 1px solid var(--brand);
+  color: var(--mainText); padding: 10px 18px; border-radius: 10px;
+  font-size: 13px; font-weight: 600;
+  z-index: 100; opacity: 0; pointer-events: none;
+  transition: opacity .2s, transform .2s;
+}
+.sb-toast.show { opacity: 1; transform: translateX(-50%) translateY(-4px); }
+
+/* ─── Live-дополнения (sport-live): подсветка изменения кэфа, счёт по периодам ─── */
+@keyframes sbFlashUp   { 0% { background: rgba(110,246,131,.55); border-color: var(--green); } 100% { background: rgba(59,89,106,0.18); border-color: rgba(59,89,106,0.4); } }
+@keyframes sbFlashDown { 0% { background: rgba(244,36,95,.5);   border-color: var(--red);   } 100% { background: rgba(59,89,106,0.18); border-color: rgba(59,89,106,0.4); } }
+.sb-odd.sb-odd--up   { animation: sbFlashUp 1.4s ease-out; }
+.sb-odd.sb-odd--down { animation: sbFlashDown 1.4s ease-out; }
+.sb-event-head__periods { display: flex; gap: 12px; justify-content: center; font-size: 11.5px; color: var(--secondText); flex-wrap: wrap; }
+.sb-event-head__periods b { color: var(--mainText); }
+.sb-market__period { font-size: 10.5px; color: var(--foreground); }
+.sb-market--closed { opacity: .6; }
+
+/* ─── Главная таблица («как у 1xBet»): подписи колонок в заголовке лиги, две строки команд
+   со счётом по периодам, статус под командами, ячейки только с кэфами, линия между ячейками ── */
+.sb-table--x { overflow-x: auto; }
+.sb-table--x .sb-row { grid-template-columns: 22px minmax(180px, 1fr) var(--gcols); gap: 4px; padding: 5px 10px 5px 8px; align-items: center; }
+.sb-table--x .sb-row--league { padding: 4px 10px 4px 8px; }
+.sb-table--x .sb-row__sport { visibility: hidden; }
+.sb-table--x .sb-row--league .sb-row__sport { visibility: visible; font-size: 14px; }
+.sb-table--x .sb-row__mkhead { text-align: center; font-size: 10.5px; color: var(--secondText); font-weight: 600; letter-spacing: .2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-table--x .sb-row--league .sb-row__mkhead:nth-child(n+5) { display: block; }
+.sb-table--x .sb-row__teams--stack { gap: 1px; }
+.sb-table--x .sb-row__teams--stack .sb-row__teams-line { gap: 6px; padding-right: 4px; }
+.sb-table--x .sb-row__teams--stack .sb-row__name { font-size: 12.5px; flex: 0 1 auto; }
+.sb-table--x .sb-row__sc { margin-left: auto; display: flex; gap: 7px; font-size: 12px; font-variant-numeric: tabular-nums; flex: 0 0 auto; }
+.sb-table--x .sb-row__sc b { color: var(--brand); font-weight: 700; min-width: 9px; text-align: right; }
+.sb-table--x .sb-row__sc i { font-style: normal; color: var(--foreground); min-width: 9px; text-align: right; }
+.sb-table--x .sb-row__status { font-size: 10.5px; color: var(--secondText); display: flex; align-items: center; gap: 5px; margin-top: 5px; line-height: 1.2; }
+.sb-table--x .sb-row--live .sb-row__status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: pulse 1.6s ease-in-out infinite; flex: 0 0 auto; }
+.sb-table--x .sb-row--live .sb-row__status span { color: var(--secondText); font-weight: 500; }
+.sb-table--x .sb-row__sep { width: 1px; justify-self: center; align-self: stretch; min-height: 24px; background: rgba(116,149,166,0.28); }
+.sb-table--x .sb-row--league .sb-row__sep { background: rgba(116,149,166,0.2); }
+.sb-table--x .sb-odd--cell { min-height: 30px; padding: 4px 3px; border-radius: 6px; }
+.sb-table--x .sb-odd--cell .sb-odd__value { font-size: 12.5px; }
+.sb-table--x .sb-odd--disabled::after { right: 2px; top: 1px; font-size: 8px; }
+/* Недоступный маркет не исчезает, а остаётся задисабленной плашкой с прочерком (как у 1xBet):
+   геометрия та же, что у живой ячейки, поэтому колонки и счёт не сдвигаются. */
+.sb-table--x .sb-odd--empty { min-height: 30px; display: flex; align-items: center; justify-content: center; color: var(--secondText); background: rgba(59,89,106,0.10); border: 1px solid rgba(59,89,106,0.22); border-radius: 6px; cursor: default; font-size: 12.5px; opacity: .55; }
+/* Маркета у события нет — вместо пустых плашек «Ещё» во всю ширину группы, как в основном
+   Спорте. Плашка не кнопка исхода: клик уходит строке и открывает страницу события. */
+.sb-table--x .sb-row__more-btn {
+  min-height: 30px; display: flex; align-items: center; justify-content: center;
+  border: 1px solid rgba(59,89,106,0.3); border-radius: 6px; background: rgba(59,89,106,0.1);
+  color: var(--secondText); font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background .12s, border-color .12s, color .12s;
+}
+.sb-table--x .sb-row:hover .sb-row__more-btn { background: rgba(59,89,106,0.22); border-color: rgba(116,149,166,0.45); color: var(--mainText); }
+.sb-table--x .sb-row__mkhead--more { color: var(--foreground); }
+.sb-table--x .sb-row__line { text-align: center; font-size: 11.5px; color: var(--secondText); font-variant-numeric: tabular-nums; white-space: nowrap; }
+/* Фора — как в основном Спорте: значение форы стоит в самой ячейке перед кэфом («−1  2.03»),
+   отдельной колонки со значением у группы нет, столбцы подписаны «Фора 1» и «Фора 2». */
+.sb-table--x .sb-odd--hcp { flex-direction: row; align-items: center; justify-content: center; gap: 5px; padding: 4px 5px; }
+.sb-table--x .sb-odd--hcp .sb-odd__hv { font-size: 11px; font-weight: 600; color: var(--foreground); font-variant-numeric: tabular-nums; }
+.sb-table--x .sb-odd--hcp.sb-odd--active .sb-odd__hv { color: var(--bg); opacity: .75; }
+.sb-table--x .sb-odd--hcp.sb-odd--disabled .sb-odd__hv { opacity: .6; }
+.sb-table--x .sb-row__more { text-align: center; font-size: 12px; color: var(--brand); font-weight: 600; }
+.sb-table--x .sb-row:hover .sb-row__more { text-decoration: underline; }
+/* Полный набор колонок рисуется всегда, поэтому на планшете строка может быть шире экрана:
+   22 (спорт) + 180 (команды) + 498 (кэфы) + отступы. Уже этого — горизонтальная прокрутка
+   .sb-table--x, иначе колонки схлопнутся и счёт «поедет». На телефоне (до 760 px) прокрутки
+   нет: там строка компактная, тотал и фора скрыты — см. раздел Mobile. */
+@media (min-width: 761px) and (max-width: 1080px) { .sb-table--x .sb-row { min-width: 760px; } }
+
+/* ─── Панель фильтра маркетов события («как в 1xBet») ────────────────────── */
+.sb-mbar {
+  position: sticky; top: 58px; z-index: 40;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  padding: 5px 8px; margin: -3px 0 6px; border-radius: 8px;
+  background: rgba(31,53,73,0.94); backdrop-filter: blur(6px);
+  border: 1px solid rgba(59,89,106,0.55);
+}
+.sb-mbar:empty { display: none; }
+.sb-mbar__period {
+  appearance: none; -webkit-appearance: none; cursor: pointer;
+  background: rgba(3,18,40,0.55) url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path d='M1 1l4 4 4-4' fill='none' stroke='%2388ADBF' stroke-width='1.6'/></svg>") no-repeat right 10px center;
+  color: var(--mainText); border: 1px solid var(--stroke); border-radius: 6px;
+  padding: 6px 28px 6px 10px; font: inherit; font-size: 12.5px; font-weight: 600; min-width: 150px;
+}
+.sb-mbar__tabs { display: flex; gap: 2px; flex: 1; min-width: 0; overflow-x: auto; scrollbar-width: none; }
+.sb-mbar__tabs::-webkit-scrollbar { display: none; }
+.sb-mbar__tab {
+  background: transparent; border: 0; border-bottom: 2px solid transparent; border-radius: 0;
+  color: var(--secondText); padding: 7px 10px 5px; font: inherit; font-size: 12.5px; font-weight: 600;
+  cursor: pointer; white-space: nowrap; transition: color .12s, border-color .12s;
+}
+.sb-mbar__tab:hover { color: var(--mainText); }
+.sb-mbar__tab.active { color: var(--mainText); border-bottom-color: var(--brand); }
+.sb-mbar__tab b { color: var(--foreground); font-weight: 500; margin-left: 4px; }
+.sb-mbar__tab b:empty { display: none; }
+.sb-mbar__q {
+  width: 140px; background: rgba(3,18,40,0.55); border: 1px solid var(--stroke); border-radius: 6px;
+  color: var(--mainText); padding: 6px 9px; font: inherit; font-size: 12px;
+}
+.sb-mbar__q:focus { outline: none; border-color: var(--brand); }
+.sb-mbar__q::placeholder { color: var(--foreground); }
+.sb-mbar__fold {
+  width: 30px; height: 30px; border-radius: 6px; border: 1px solid var(--stroke); background: rgba(3,18,40,0.55);
+  cursor: pointer; position: relative;
+}
+.sb-mbar__fold::before, .sb-mbar__fold::after {
+  content: ''; position: absolute; left: 50%; width: 7px; height: 7px; margin-left: -4px;
+  border-right: 2px solid var(--secondText); border-bottom: 2px solid var(--secondText); transform: rotate(-135deg);
+}
+.sb-mbar__fold::before { top: 8px; }
+.sb-mbar__fold::after { top: 14px; }
+.sb-mbar__fold.folded::before, .sb-mbar__fold.folded::after { transform: rotate(45deg); }
+.sb-mbar__fold.folded::before { top: 6px; }
+.sb-mbar__fold.folded::after { top: 12px; }
+.sb-mbar__fold:hover { border-color: var(--brand); }
+@media (max-width: 760px) { .sb-mbar { top: 0; } .sb-mbar__q { width: 100%; } }
+
+/* ─── Компактная сетка маркетов события («как в 1xBet») ──────────────────── */
+.sb-markets--compact { gap: 5px; }
+.sb-pband { margin-top: 6px; padding: 6px 12px; border-radius: 7px; background: rgba(59,89,106,0.55); color: var(--mainText); font-weight: 700; font-size: 13px; letter-spacing: .2px; }
+.sb-mgroup { background: var(--table); border: 1px solid rgba(59,89,106,0.55); border-radius: 7px; overflow: hidden; }
+.sb-mgroup__head { display: flex; align-items: center; gap: 8px; padding: 5px 10px; background: rgba(59,89,106,0.28); font-size: 12.5px; font-weight: 600; color: var(--mainText); cursor: pointer; user-select: none; }
+.sb-mgroup__head:hover { background: rgba(59,89,106,0.4); }
+.sb-mgroup__n { font-size: 10.5px; color: var(--foreground); font-weight: 500; }
+.sb-mgroup__head::after { content: ''; margin-left: auto; width: 7px; height: 7px; border-right: 2px solid var(--secondText); border-bottom: 2px solid var(--secondText); transform: rotate(-135deg) translate(-1px, 1px); transition: transform .15s; }
+.sb-mgroup.collapsed .sb-mgroup__head::after { transform: rotate(45deg) translate(-2px, -2px); }
+.sb-mgroup.collapsed .sb-mgroup__body { display: none; }
+.sb-mgroup__body { padding: 3px; display: flex; flex-direction: column; gap: 3px; }
+.sb-line { display: grid; gap: 3px; grid-template-columns: repeat(var(--cols, 2), minmax(0, 1fr)); }
+.sb-line--closed { opacity: .55; }
+.sb-line__cap { grid-column: 1 / -1; font-size: 11px; color: var(--secondText); padding: 3px 10px 0; }
+.sb-markets--compact .sb-odd { flex-direction: row; justify-content: space-between; align-items: center; gap: 8px; min-height: 28px; padding: 3px 10px; border-radius: 5px; text-align: left; }
+.sb-markets--compact .sb-odd:hover:not(.sb-odd--disabled) { transform: none; }
+.sb-markets--compact .sb-odd__label { font-size: 12px; margin: 0; color: var(--secondText); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sb-markets--compact .sb-odd__value { font-size: 12.5px; flex-shrink: 0; }
+.sb-markets--compact .sb-odd--active .sb-odd__label { color: var(--bg); }
+.sb-markets--compact .sb-odd--disabled::after { display: none; }
+/* переключатель языка в шапке: RU EN ES PT */
+.sb-lang { display: flex; gap: 2px; padding: 2px; border-radius: 8px; border: 1px solid var(--stroke); background: rgba(31,53,73,0.7); }
+.sb-lang__btn { border: 0; background: transparent; color: var(--secondText); font: inherit; font-size: 11.5px; font-weight: 700; letter-spacing: .3px; padding: 5px 8px; border-radius: 6px; cursor: pointer; transition: color .12s, background .12s; }
+.sb-lang__btn:hover { color: var(--mainText); background: rgba(59,89,106,0.3); }
+.sb-lang__btn.active { background: var(--brand); color: var(--bg); }
+
+/* LED «Live» в шапке: состояние подключения к WS-серверу (Centrifugo) */
+.sb-conn { font-size: 12px; font-weight: 600; letter-spacing: .3px; color: var(--secondText); display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; padding: 8px 12px; border-radius: 8px; border: 1px solid var(--stroke); background: rgba(31,53,73,0.7); }
+.sb-conn::before { content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--foreground); animation: pulse 1.2s ease-in-out infinite; }
+.sb-conn.ok { color: var(--mainText); }
+.sb-conn.ok::before { background: var(--green); box-shadow: 0 0 8px var(--green); animation: none; }
+.sb-conn.bad::before { background: var(--red); box-shadow: 0 0 8px var(--red); animation: none; }
+/* баланс: подсветка изменения (списание / начисление) */
+@keyframes sbBalUp   { 0% { color: var(--green); } 100% { color: var(--brand); } }
+@keyframes sbBalDown { 0% { color: var(--red); }   100% { color: var(--brand); } }
+.sb-header__balance.up   { animation: sbBalUp 1.6s ease-out; }
+.sb-header__balance.down { animation: sbBalDown 1.6s ease-out; }
+
+/* ─── Правая колонка: вкладки «Купон» / «Мои ставки» ─────────────────────── */
+.sb-slip__tabs { display: flex; gap: 4px; padding: 6px; border-bottom: 1px solid var(--stroke); background: rgba(3,18,40,0.35); }
+.sb-slip__tab {
+  flex: 1; padding: 8px 10px; border-radius: 8px; border: 1px solid transparent;
+  background: transparent; color: var(--secondText); font: inherit; font-weight: 600; font-size: 13px;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  transition: color .15s, background .15s;
+}
+.sb-slip__tab:hover { color: var(--mainText); background: rgba(59,89,106,0.25); }
+.sb-slip__tab.active { color: var(--bg); background: var(--gradient-cta); box-shadow: var(--shadow-cta); }
+.sb-slip__tab-count { font-size: 11px; padding: 1px 6px; border-radius: 10px; background: rgba(3,18,40,0.35); color: inherit; }
+.sb-slip__tab.active .sb-slip__tab-count { background: rgba(3,18,40,0.25); }
+
+/* «Мои ставки»: подвкладки «Текущие / Архив» */
+.sb-bets__sub { display: flex; gap: 2px; padding: 6px 8px 0; }
+.sb-bets__sub-btn { flex: 1; background: transparent; border: 0; border-bottom: 2px solid transparent; color: var(--secondText); font: inherit; font-size: 12px; font-weight: 600; padding: 6px 8px 5px; cursor: pointer; transition: color .12s, border-color .12s; }
+.sb-bets__sub-btn:hover { color: var(--mainText); }
+.sb-bets__sub-btn.active { color: var(--mainText); border-bottom-color: var(--brand); }
+.sb-bets__sub-btn b { color: var(--foreground); font-weight: 500; margin-left: 3px; }
+.sb-bets { display: flex; flex-direction: column; gap: 8px; }
+/* список ставок занимает всю высоту колонки (колонка липкая, ограничена высотой окна), дальше — прокрутка */
+.sb-slip__list.sb-bets { max-height: none; flex: 1 1 auto; min-height: 0; }
+.sb-bet { position: relative; border: 1px solid var(--stroke); border-radius: 10px; padding: 10px 12px; background: rgba(31,53,73,0.35); }
+/* корзина в левом нижнем углу рассчитанной ставки — убрать из списка */
+.sb-bet__del {
+  position: absolute; left: 8px; bottom: 6px; width: 22px; height: 22px; padding: 0;
+  border: 0; border-radius: 5px; background: transparent; color: var(--foreground); cursor: pointer;
+  display: flex; align-items: center; justify-content: center; opacity: .75; transition: color .12s, background .12s, opacity .12s;
+}
+.sb-bet__del:hover { color: var(--red); background: rgba(244,36,95,0.12); opacity: 1; }
+.sb-bet__del:disabled { opacity: .3; cursor: default; }
+.sb-bet:has(.sb-bet__del) .sb-bet__eta { padding-left: 26px; }
+.sb-bet__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 11px; color: var(--secondText); }
+.sb-bet__status { font-weight: 700; font-size: 11px; letter-spacing: .3px; text-transform: uppercase; padding: 2px 8px; border-radius: 10px; background: rgba(59,89,106,0.35); color: var(--mainText); }
+.sb-bet--open .sb-bet__status { background: rgba(255,171,0,0.18); color: var(--orange); }
+.sb-bet--win .sb-bet__status { background: rgba(110,246,131,0.18); color: var(--green); }
+.sb-bet--lose .sb-bet__status { background: rgba(244,36,95,0.18); color: var(--red); }
+.sb-bet--lose .sb-slip__item-pick-odds, .sb-bet--lose .sb-slip__item-pick-label { opacity: .6; }
+.sb-bet__sel { padding: 6px 0; border-top: 1px dashed rgba(59,89,106,0.5); }
+.sb-bet__head + .sb-bet__sel { border-top: 0; }
+.sb-bet__live { font-size: 11px; color: var(--secondText); margin-top: 3px; display: flex; align-items: center; gap: 6px; }
+.sb-bet--open .sb-bet__live::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--red); animation: pulse 1.6s ease-in-out infinite; }
+.sb-bet__foot { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--stroke); font-size: 11px; color: var(--secondText); }
+.sb-bet__foot b { color: var(--mainText); font-weight: 600; }
+.sb-bet__eta { width: 100%; text-align: right; color: var(--secondText); font-size: 11px; margin-top: 2px; }
+.sb-bet--open .sb-bet__eta { color: var(--brand); opacity: .85; }
+.sb-bet--win .sb-bet__foot b:last-child { color: var(--green); }
+/* кешаут открытой ставки (логика бэка Спорта): слева внизу карточки кнопка-пилюля с суммой «≈»,
+   справа — «Расчёт ≈ через…»; по клику — блок подтверждения с обновляемой суммой и отсчётом выкупа */
+.sb-bet__actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.sb-bet__actions .sb-bet__eta { width: auto; flex: 1 1 auto; margin: 0; }
+.sb-bet__cashout {
+  flex: 0 0 auto; display: inline-flex; align-items: center; gap: 4px; padding: 4px 9px;
+  border: 1px solid rgba(255,209,0,0.45); border-radius: 8px; background: rgba(255,209,0,0.07);
+  color: var(--brand); font-family: inherit; font-size: 11px; font-weight: 600; line-height: 1.2; cursor: pointer; white-space: nowrap;
+  transition: background .12s, border-color .12s;
+}
+.sb-bet__cashout:hover { background: rgba(255,209,0,0.16); border-color: var(--brand); }
+.sb-bet__cashout b { font-weight: 700; }
+.sb-bet__co { margin-top: 6px; padding: 8px 10px; border: 1px solid rgba(255,209,0,0.3); border-radius: 8px; background: rgba(255,209,0,0.06); }
+.sb-bet__co-q { font-size: 13px; color: var(--mainText); }
+.sb-bet__co-q b { color: var(--brand); font-weight: 700; }
+.sb-bet__co-note { font-size: 11px; color: var(--secondText); margin-top: 2px; }
+.sb-bet__co-btns { display: flex; gap: 6px; margin-top: 7px; }
+.sb-bet__co-go, .sb-bet__co-no { flex: 1; padding: 6px 8px; border-radius: 7px; font-family: inherit; font-size: 12px; font-weight: 700; line-height: 1.2; cursor: pointer; transition: opacity .12s, background .12s, color .12s; }
+.sb-bet__co-go { border: 0; background: var(--brand); color: var(--bg); }
+.sb-bet__co-go:hover { background: var(--headerText); }
+.sb-bet__co-go:disabled { opacity: .7; cursor: default; }
+.sb-bet__co-no { border: 1px solid var(--stroke); background: transparent; color: var(--secondText); }
+.sb-bet__co-no:hover { color: var(--mainText); }
+.sb-bet__co-no:disabled { opacity: .5; cursor: default; }
+.sb-bet__co + .sb-bet__eta { display: block; margin-top: 4px; }
+.sb-bet--cashout .sb-bet__status { background: rgba(255,209,0,0.18); color: var(--brand); }
+.sb-bet--cashout .sb-bet__foot b:last-child { color: var(--brand); }
+
+/* ─── Группировка таблицы по лигам (как на live-странице Пижамы) ─────────── */
+.sb-row--league {
+  cursor: default; padding: 4px 16px 3px;
+  background: rgba(3,18,40,0.38);
+  border-bottom: 1px solid rgba(59,89,106,0.45);
+  border-top: 1px solid rgba(59,89,106,0.45);
+}
+.sb-row--league:hover { background: rgba(3,18,40,0.38); }
+.sb-row--league .sb-row__sport { font-size: 14px; opacity: .8; }
+.sb-row__league-name {
+  font-size: 11.5px; font-weight: 600; color: var(--secondText);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sb-row__mkhead {
+  font-size: 9.5px; color: var(--foreground); text-transform: uppercase;
+  letter-spacing: 0.5px; text-align: center;
+}
+.sb-row--grouped { padding-top: 4px; padding-bottom: 4px; }
+.sb-row--grouped .sb-row__market-name { display: none; }
+@media (max-width: 760px) {
+  .sb-row--league .sb-row__mkhead:nth-child(n+5) { display: none; }
+}
+
+/* ─── Строки в группах: участники в две строки, иконка спорта только у лиги ─── */
+.sb-row__teams--stack { gap: 3px; }
+.sb-row__teams--stack .sb-row__teams-line { gap: 6px; }
+.sb-row__teams--stack .sb-row__name { flex: 1 1 auto; font-size: 13px; line-height: 1.2; }
+.sb-row--grouped .sb-row__sport { visibility: hidden; }
+
+/* Узкая ширина (телефон и та же ширина у iframe витрины product-showcase):
+   шапка ужимается в одну строку — логотип не переносится, LED остаётся точкой без
+   подписи, у переключателя языка и баланса меньше поля. Без этого на 340-390 px
+   строка не помещается и вся страница получает горизонтальный скролл. */
+@media (max-width: 520px) {
+  .sb-header { gap: 6px; padding: 8px 10px; }
+  .sb-header__logo { font-size: 13px; letter-spacing: 0.3px; white-space: nowrap; }
+  .sb-header__logo-sub { display: none; }          /* остаётся только «PARYAJPAM» */
+  .sb-lang { gap: 0; }
+  .sb-lang__btn { padding: 5px 4px; font-size: 10px; }
+  .sb-conn { font-size: 0; gap: 0; padding: 7px; } /* только точка состояния */
+  .sb-header__balance { padding: 6px 8px; font-size: 11px; gap: 4px; white-space: nowrap; }
+}

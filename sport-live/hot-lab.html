@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Горячие события — варианты блока</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="assets/css/main.css?v=33" />
+  <link rel="stylesheet" href="assets/css/hot-lab.css?v=2" />
+</head>
+<body class="lab">
+  <header class="sb-header">
+    <div class="sb-header__logo">PARYAJPAM<span class="sb-header__logo-sub"> · SPORT</span></div>
+    <span class="lab-head__sub">Горячие события — варианты блока</span>
+    <span class="sb-header__spacer"></span>
+    <span id="sb-conn" class="sb-conn">Live</span>
+    <a class="lab-head__link" href="index.html">← к прототипу</a>
+  </header>
+
+  <main class="lab-main">
+    <p class="lab-intro">
+      Один и тот же набор горячих событий из фида, отрисованный шестью способами. Данные живые:
+      счёт, минута и коэффициенты обновляются по Centrifugo. Палитра — фирменная Пижама
+      (тёмно-синий фон, жёлтый бренд), меняется только композиция блока.
+    </p>
+
+    <section class="lab-item">
+      <div class="lab-item__head">
+        <span class="lab-item__no">0</span>
+        <div>
+          <h2 class="lab-item__title">Как было до 11.09.2026</h2>
+          <p class="lab-item__note">Крупные карточки в две колонки, логотипы 48&nbsp;px, счёт по центру.
+            Занимает ~640&nbsp;px по вертикали и дублирует таблицу LIVE, которая идёт сразу под ним.</p>
+        </div>
+      </div>
+      <div class="lab-item__body" id="v0"></div>
+    </section>
+
+    <section class="lab-item">
+      <div class="lab-item__head">
+        <span class="lab-item__no">A</span>
+        <div>
+          <h2 class="lab-item__title">Лента карточек</h2>
+          <p class="lab-item__note">По мотивам Betsson / Betsafe / 888sport: один горизонтальный ряд
+            со скроллом и снапом, карточка 260&nbsp;px. Высота блока ~180&nbsp;px, событий влезает сколько угодно.</p>
+        </div>
+      </div>
+      <div class="lab-item__body" id="vA"></div>
+    </section>
+
+    <section class="lab-item">
+      <div class="lab-item__head">
+        <span class="lab-item__no">B</span>
+        <div>
+          <h2 class="lab-item__title">Герой + список</h2>
+          <p class="lab-item__note">По мотивам Winline «Главные события», Leon «ТОП», 1xBet:
+            одно событие крупно, остальные — компактными строками рядом. Расставляет приоритет вместо ровной сетки.</p>
+        </div>
+      </div>
+      <div class="lab-item__body" id="vB"></div>
+    </section>
+
+    <section class="lab-item">
+      <div class="lab-item__head">
+        <span class="lab-item__no">C</span>
+        <div>
+          <h2 class="lab-item__title">Плитки «Топ линия» <span class="lab-item__flag">выбрано, стоит в прототипе</span></h2>
+          <p class="lab-item__note">По мотивам Olimpbet: логотипы внахлёст слева, названия в две строки,
+            исходы подписью и значением в одну строку (П1&nbsp;2.40). Три плитки в ряд, высота ~110&nbsp;px.</p>
+        </div>
+      </div>
+      <div class="lab-item__body" id="vC"></div>
+    </section>
+
+    <section class="lab-item">
+      <div class="lab-item__head">
+        <span class="lab-item__no">D</span>
+        <div>
+          <h2 class="lab-item__title">Строки-хайлайты</h2>
+          <p class="lab-item__note">По мотивам bwin и SportyBet: карточек нет вообще — горячие события
+            это первые строки той же таблицы, отмеченные жёлтой кромкой. Блок не дублирует список ниже, а открывает его.</p>
+        </div>
+      </div>
+      <div class="lab-item__body" id="vD"></div>
+    </section>
+
+    <section class="lab-item">
+      <div class="lab-item__head">
+        <span class="lab-item__no">E</span>
+        <div>
+          <h2 class="lab-item__title">Тикер</h2>
+          <p class="lab-item__note">Самый компактный вариант: одна прокручиваемая строка чипов со счётом
+            и тремя кэфами. Высота ~64&nbsp;px, на телефоне занимает один экранный «этаж».</p>
+        </div>
+      </div>
+      <div class="lab-item__body" id="vE"></div>
+    </section>
+
+    <section class="lab-item">
+      <div class="lab-item__head">
+        <span class="lab-item__no">F</span>
+        <div>
+          <h2 class="lab-item__title">Табло 3 в ряд</h2>
+          <p class="lab-item__note">Ближе всего к нынешнему, но вдвое ниже: логотипы 30&nbsp;px в строку,
+            счёт справа, кэфы снизу. Вариант «оставить как есть, но ужать».</p>
+        </div>
+      </div>
+      <div class="lab-item__body" id="vF"></div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/centrifuge@5.3.5/dist/centrifuge.js"></script>
+  <script src="assets/js/i18n.js?v=7"></script>
+  <script src="assets/js/live-data.js?v=20"></script>
+  <script src="assets/js/hot-lab.js?v=1"></script>
+</body>
+</html>

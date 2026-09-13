@@ -1,0 +1,4 @@
+# health-check витрина feed-mysql-bridge — сбор каждую минуту.
+# Пишет /var/lib/feed-health/{samples,events}.jsonl и /var/www/feed-health/index.html (отдаёт nginx).
+# Установка: cp health/feed-health.cron /etc/cron.d/feed-health  (см. health/README.md)
+* * * * * root /usr/bin/python3 /opt/feed-mysql-bridge/health/collect.py >> /var/lib/feed-health/collect.log 2>&1
