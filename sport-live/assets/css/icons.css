@@ -1,0 +1,85 @@
+/* ─── Пиктограммы sport-live ────────────────────────────────────────────────
+   До 13.09.2026 виды спорта, вкладки и служебные метки показывались эмодзи, и их вид
+   зависел от платформы игрока (Apple / Google / Windows рисуют их по-разному). Теперь это
+   два набора PNG в палитре сайта, сгенерированные Nano Banana
+   (tools/icons/gen_icons.py):
+     assets/icons/dark/  — золото + бирюза, детали navy — для тёмной темы;
+     assets/icons/light/ — navy + золото, детали белые — для светлой.
+   Силуэты в наборах совпадают (светлый сделан image-to-image от тёмного).
+   Элемент: <i class="sb-ico sb-ico--<имя>" aria-hidden="true"></i>; размер задаётся
+   font-size родителя (1.2em), как раньше у эмодзи. Набор для темы выбирает CSS по
+   data-theme на <html>; там, где фон не совпадает с темой (золотая плавающая кнопка
+   купона), вариант закреплён явно. */
+.sb-ico {
+  display: inline-block; width: 1.2em; height: 1.2em; vertical-align: -0.28em;
+  background: center / contain no-repeat; flex: none;
+}
+
+/* виды спорта (s<id> = id вида спорта в фиде), sport — запасная, all — «Все» */
+.sb-ico--s1  { background-image: url(../icons/dark/s1.png); }
+.sb-ico--s2  { background-image: url(../icons/dark/s2.png); }
+.sb-ico--s3  { background-image: url(../icons/dark/s3.png); }
+.sb-ico--s4  { background-image: url(../icons/dark/s4.png); }
+.sb-ico--s5  { background-image: url(../icons/dark/s5.png); }
+.sb-ico--s6  { background-image: url(../icons/dark/s6.png); }
+.sb-ico--s7  { background-image: url(../icons/dark/s7.png); }
+.sb-ico--s8  { background-image: url(../icons/dark/s8.png); }
+.sb-ico--s12 { background-image: url(../icons/dark/s12.png); }
+.sb-ico--s13 { background-image: url(../icons/dark/s13.png); }
+.sb-ico--s14 { background-image: url(../icons/dark/s14.png); }
+.sb-ico--s15 { background-image: url(../icons/dark/s15.png); }
+.sb-ico--sport  { background-image: url(../icons/dark/sport.png); }
+.sb-ico--all    { background-image: url(../icons/dark/all.png); }
+/* служебные */
+.sb-ico--live   { background-image: url(../icons/dark/live.png); }
+.sb-ico--line   { background-image: url(../icons/dark/line.png); }
+.sb-ico--coupon { background-image: url(../icons/dark/coupon.png); }
+.sb-ico--bets   { background-image: url(../icons/dark/bets.png); }
+.sb-ico--hot    { background-image: url(../icons/dark/hot.png); }
+.sb-ico--lock   { background-image: url(../icons/dark/lock.png); }
+.sb-ico--sun    { background-image: url(../icons/dark/sun.png); }
+.sb-ico--moon   { background-image: url(../icons/dark/moon.png); }
+.sb-ico--warn   { background-image: url(../icons/dark/warn.png); }
+
+:root[data-theme="light"] .sb-ico--s1  { background-image: url(../icons/light/s1.png); }
+:root[data-theme="light"] .sb-ico--s2  { background-image: url(../icons/light/s2.png); }
+:root[data-theme="light"] .sb-ico--s3  { background-image: url(../icons/light/s3.png); }
+:root[data-theme="light"] .sb-ico--s4  { background-image: url(../icons/light/s4.png); }
+:root[data-theme="light"] .sb-ico--s5  { background-image: url(../icons/light/s5.png); }
+:root[data-theme="light"] .sb-ico--s6  { background-image: url(../icons/light/s6.png); }
+:root[data-theme="light"] .sb-ico--s7  { background-image: url(../icons/light/s7.png); }
+:root[data-theme="light"] .sb-ico--s8  { background-image: url(../icons/light/s8.png); }
+:root[data-theme="light"] .sb-ico--s12 { background-image: url(../icons/light/s12.png); }
+:root[data-theme="light"] .sb-ico--s13 { background-image: url(../icons/light/s13.png); }
+:root[data-theme="light"] .sb-ico--s14 { background-image: url(../icons/light/s14.png); }
+:root[data-theme="light"] .sb-ico--s15 { background-image: url(../icons/light/s15.png); }
+:root[data-theme="light"] .sb-ico--sport  { background-image: url(../icons/light/sport.png); }
+:root[data-theme="light"] .sb-ico--all    { background-image: url(../icons/light/all.png); }
+:root[data-theme="light"] .sb-ico--live   { background-image: url(../icons/light/live.png); }
+:root[data-theme="light"] .sb-ico--line   { background-image: url(../icons/light/line.png); }
+:root[data-theme="light"] .sb-ico--coupon { background-image: url(../icons/light/coupon.png); }
+:root[data-theme="light"] .sb-ico--bets   { background-image: url(../icons/light/bets.png); }
+:root[data-theme="light"] .sb-ico--hot    { background-image: url(../icons/light/hot.png); }
+:root[data-theme="light"] .sb-ico--lock   { background-image: url(../icons/light/lock.png); }
+:root[data-theme="light"] .sb-ico--sun    { background-image: url(../icons/light/sun.png); }
+:root[data-theme="light"] .sb-ico--moon   { background-image: url(../icons/light/moon.png); }
+:root[data-theme="light"] .sb-ico--warn   { background-image: url(../icons/light/warn.png); }
+
+/* ── подгонка по местам ── */
+/* сайдбар и строка лиги: как раньше у эмодзи — по font-size контейнера */
+.sb-sport__icon, .sb-row__sport { display: inline-flex; align-items: center; justify-content: center; }
+/* заголовок секции («Hot events», «LIVE сейчас», «Расписание») */
+.sb-section__title .sb-ico { width: 1.3em; height: 1.3em; margin-right: -2px; }
+/* мета-строка страницы события: иконка перед названием лиги */
+#sb-event-meta .sb-ico { vertical-align: -0.3em; margin-right: 2px; }
+/* пустой купон / пустые ставки — крупный знак, полупрозрачность задаёт контейнер */
+.sb-slip__empty-icon .sb-ico { width: 1.15em; height: 1.15em; }
+/* плавающая кнопка купона (телефон): фон золотой в обеих темах — всегда navy-вариант */
+.sb-slip-fab .sb-ico { width: 1.25em; height: 1.25em; vertical-align: middle; }
+.sb-slip-fab .sb-ico--coupon, :root[data-theme="light"] .sb-slip-fab .sb-ico--coupon { background-image: url(../icons/light/coupon.png); }
+/* нижняя навигация телефона: неактивные вкладки чуть приглушены, активная — в полный цвет */
+.sb-mnav__ic { display: inline-flex; align-items: center; justify-content: center; height: 20px; }
+.sb-mnav__ic .sb-ico { width: 20px; height: 20px; opacity: .72; transition: opacity .12s; }
+.sb-mnav__it.active .sb-ico { opacity: 1; }
+/* предупреждение в купоне о недоступном исходе */
+.sb-slip__warn .sb-ico { width: 1.3em; height: 1.3em; vertical-align: -0.35em; }

@@ -1,0 +1,5 @@
+# Сборщик feed-mysql-bridge: раз в 5 минут помечает истёкшие по TTL фида объекты
+# (status=3 + 24 ч), проверяет аномалии (активные события без ключа в Redis) и
+# удаляет по ретенции (7 суток). flock не даёт прогонам накладываться (первый
+# прогон на большой базе долгий). Установка: cp deploy/feed-sweep.cron /etc/cron.d/feed-sweep
+*/5 * * * * root cd /opt/feed-mysql-bridge && /usr/bin/flock -n /var/lib/feed-health/.sweep.lock /usr/bin/python3 bridge.py --sweep >> /var/lib/feed-health/sweep.log 2>&1

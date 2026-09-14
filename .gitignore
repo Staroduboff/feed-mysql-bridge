@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Внутренняя заметка — не для партнёров
+INTERNAL.md
+
+# Сырые генерации Nano Banana для пиктограмм sport-live (~1 МБ каждая, пересоздаются gen_icons.py)
+sport-live/tools/icons/raw/
+sport-live/tools/icons/sheet.png
