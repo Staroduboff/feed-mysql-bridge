@@ -1,0 +1,258 @@
+/*
+ * hot-lab.css — оформление витрины вариантов блока «Горячие события».
+ * Токены палитры берутся из main.css (фон #031228, бренд #ffd100, таблица #1F3549);
+ * здесь только композиции вариантов и обвязка страницы-лаборатории.
+ */
+
+.lab-head__sub { color: var(--secondText); font-size: 13px; margin-left: 14px; }
+.lab-head__link { font-size: 13px; }
+
+.lab-main { max-width: 1180px; margin: 0 auto; padding: 18px 20px 80px; }
+.lab-intro {
+  color: var(--secondText); font-size: 13.5px; line-height: 1.55;
+  background: rgba(31,53,73,0.45); border: 1px solid rgba(59,89,106,0.5);
+  border-radius: 12px; padding: 12px 16px; margin: 0 0 22px;
+}
+
+.lab-item { margin-bottom: 34px; }
+.lab-item__head { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 10px; }
+.lab-item__no {
+  flex: 0 0 auto; width: 30px; height: 30px; border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--brand); color: var(--bg); font-weight: 800; font-size: 14px;
+}
+.lab-item__title { margin: 2px 0 3px; font-size: 16px; font-weight: 700; color: var(--mainText); }
+.lab-item__note { margin: 0; font-size: 12.5px; line-height: 1.5; color: var(--foreground); max-width: 900px; }
+.lab-item__body { border: 1px dashed rgba(59,89,106,0.55); border-radius: 14px; padding: 10px; background: rgba(3,18,40,0.5); }
+
+.lab-sec { background: var(--table); border: 1px solid rgba(59,89,106,0.55); border-radius: 14px; overflow: hidden; }
+.lab-pill {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 7px;
+  background: rgba(59,89,106,0.45); color: var(--secondText); white-space: nowrap;
+}
+.lab-pill--live { background: var(--red); color: #fff; }
+.lab-odd-inline {
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 6px 4px; border-radius: 8px; font-size: 12.5px; font-weight: 700;
+  background: rgba(59,89,106,0.18); border: 1px solid rgba(59,89,106,0.4); color: var(--mainText);
+  font-variant-numeric: tabular-nums; transition: all .12s;
+}
+.lab-odd-inline b { font-weight: 500; font-size: 11px; color: var(--secondText); }
+.lab-odd-inline:hover { background: rgba(255,209,0,0.08); border-color: var(--brand); }
+a.sb-hot__card, .labA__card, .labB__hero, .labB__row, .labC__card, .labD__row, .labE__chip, .labF__card { color: inherit; text-decoration: none; }
+
+/* ── 0. Как было: крупные карточки в две колонки ────────────────────────────
+   Эти правила жили в main.css до 11.09.2026; после переезда боевого блока на плитки
+   «Топ линия» они остались только здесь, чтобы вариант 0 витрины показывал прежний вид. */
+#v0 .sb-hot__list {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 8px; padding: 10px 14px;
+}
+#v0 .sb-hot__card {
+  background: rgba(255,220,69,0.06);
+  border: 1px solid rgba(255,209,0,0.25); border-radius: 11px; padding: 9px 11px;
+  display: flex; flex-direction: column; gap: 5px; cursor: pointer;
+}
+#v0 .sb-hot__card-head { display: flex; align-items: center; gap: 8px; }
+#v0 .sb-hot__card-league { font-size: 11px; color: var(--foreground); flex: 1; }
+#v0 .sb-hot__card-pill {
+  font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 8px;
+  background: var(--brand); color: var(--bg);
+}
+#v0 .sb-hot__card-pill--live { background: var(--red); color: #fff; }
+#v0 .sb-hot__card-teams { display: grid; grid-template-columns: 1fr auto 1fr; gap: 8px; align-items: start; padding: 4px 0 2px; }
+#v0 .sb-hot__team { display: flex; flex-direction: column; align-items: center; gap: 7px; min-width: 0; text-align: center; }
+#v0 .sb-hot__team .sb-logo { box-shadow: 0 2px 6px rgba(0,0,0,0.35); }
+#v0 .sb-hot__team-name {
+  font-size: 13px; font-weight: 600; color: var(--mainText); line-height: 1.2; max-width: 100%;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere;
+}
+#v0 .sb-hot__center { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 64px; padding-top: 7px; }
+#v0 .sb-hot__score { font-size: 21px; font-weight: 800; line-height: 1.1; color: var(--brand); font-variant-numeric: tabular-nums; letter-spacing: 0.5px; }
+#v0 .sb-hot__score--vs { font-size: 15px; font-weight: 600; color: var(--foreground); letter-spacing: 0; padding-top: 4px; }
+#v0 .sb-hot__when { font-size: 11px; color: var(--secondText); white-space: nowrap; text-align: center; }
+#v0 .sb-hot__when--live { color: var(--red); font-weight: 600; }
+#v0 .sb-hot__card-odds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: auto; padding-top: 4px; }
+
+/* ── A. Лента карточек ──────────────────────────────────────────────────── */
+.labA__wrap { padding: 10px 12px 14px; }
+.labA__list {
+  display: flex; gap: 10px; overflow-x: auto; scroll-snap-type: x mandatory;
+  padding-bottom: 6px;
+}
+.labA__card {
+  flex: 0 0 258px; scroll-snap-align: start;
+  display: flex; flex-direction: column; gap: 5px;
+  padding: 10px 11px; border-radius: 12px;
+  border: 1px solid rgba(59,89,106,0.5);
+  background:
+    radial-gradient(120% 130% at 100% 0%, hsl(var(--hue,210) 42% 24% / 0.55), transparent 62%),
+    linear-gradient(180deg, rgba(255,209,0,0.06), rgba(31,53,73,0.9));
+  transition: border-color .15s, transform .15s;
+}
+.labA__card:hover { border-color: var(--brand); transform: translateY(-2px); }
+.labA__head { display: flex; align-items: center; gap: 6px; }
+.labA__sport { font-size: 14px; }
+.labA__league {
+  flex: 1; min-width: 0; font-size: 11px; color: var(--foreground);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.labA__team { display: flex; align-items: center; gap: 8px; }
+.labA__name {
+  flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--mainText);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.labA__sc { font-size: 15px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.labA__min { font-size: 11px; color: var(--secondText); }
+.labA__odds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; margin-top: 3px; }
+
+/* ── B. Герой + список ──────────────────────────────────────────────────── */
+.labB { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 12px 14px 14px; }
+.labB__hero {
+  display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; border-radius: 14px;
+  border: 1px solid rgba(255,209,0,0.35);
+  background:
+    radial-gradient(90% 120% at 12% 0%, rgba(255,209,0,0.16), transparent 58%),
+    linear-gradient(135deg, #12294a 0%, #0a1c36 60%, #061428 100%);
+  transition: border-color .15s;
+}
+.labB__hero:hover { border-color: var(--brand); }
+.labB__hero-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.labB__hero-league { font-size: 11.5px; color: var(--headerText); font-weight: 600; }
+.labB__hero-body { flex: 1; align-content: center; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 10px; }
+.labB__hero-team { display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; min-width: 0; }
+.labB__hero-team span { font-size: 14px; font-weight: 700; color: var(--mainText); line-height: 1.2; }
+.labB__hero-mid { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.labB__hero-score { font-size: 26px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; line-height: 1; }
+.labB__hero-when { font-size: 11px; color: var(--secondText); white-space: nowrap; }
+.labB__hero-odds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.sb-odd--wide { min-height: 40px; }
+
+.labB__list { display: flex; flex-direction: column; gap: 6px; }
+.labB__row {
+  display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 10px;
+  padding: 7px 10px; border-radius: 10px;
+  background: rgba(59,89,106,0.14); border: 1px solid rgba(59,89,106,0.35);
+  transition: border-color .15s, background .15s;
+}
+.labB__row:hover { border-color: var(--brand); background: rgba(255,209,0,0.05); }
+.labB__row-main { min-width: 0; }
+.labB__row-league { font-size: 10.5px; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labB__row-when { color: var(--secondText); }
+.labB__row-teams { display: flex; flex-direction: column; }
+.labB__row-teams span { font-size: 12.5px; font-weight: 600; color: var(--mainText); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labB__row-score { display: flex; flex-direction: column; font-size: 12.5px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.labB__row-odds { display: grid; grid-template-columns: repeat(3, 46px); gap: 4px; }
+
+/* ── C. Плитки «Топ линия» ──────────────────────────────────────────────── */
+.labC { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px 14px 14px; }
+.labC__card {
+  display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; border-radius: 12px;
+  background: rgba(59,89,106,0.13); border: 1px solid rgba(59,89,106,0.4);
+  transition: border-color .15s, transform .15s;
+}
+.labC__card:hover { border-color: var(--brand); transform: translateY(-2px); }
+.labC__top { display: flex; align-items: center; gap: 8px; font-size: 10.5px; color: var(--foreground); }
+.labC__when { color: var(--headerText); font-weight: 600; }
+.labC__league { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labC__mid { display: flex; align-items: center; gap: 10px; }
+.labC__logos { display: flex; }
+.labC__logos .sb-logo:last-child { margin-left: -9px; }
+.labC__names { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.labC__names span { font-size: 13px; font-weight: 600; color: var(--mainText); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labC__score { display: flex; flex-direction: column; align-items: flex-end; font-size: 13px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.labC__odds { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; margin-top: auto; }
+
+/* ── D. Строки-хайлайты ─────────────────────────────────────────────────── */
+.labD { padding: 4px 0 8px; }
+.labD__cols {
+  display: grid; grid-template-columns: 22px 1fr 34px repeat(3, 56px); gap: 8px;
+  padding: 4px 14px 6px; font-size: 10.5px; color: var(--foreground); text-align: center;
+}
+.labD__cols span:nth-child(2) { text-align: left; }
+.labD__row {
+  display: grid; grid-template-columns: 22px 1fr 34px repeat(3, 56px); gap: 8px; align-items: center;
+  padding: 7px 14px; border-left: 3px solid transparent;
+  transition: background .15s, border-color .15s;
+}
+.labD__row:nth-child(odd) { background: rgba(59,89,106,0.08); }
+.labD__row:hover { background: rgba(255,209,0,0.06); border-left-color: var(--brand); }
+.labD__flame { font-size: 13px; text-align: center; }
+.labD__main { min-width: 0; }
+.labD__teams { display: flex; flex-direction: column; gap: 2px; }
+.labD__teams span { display: flex; align-items: center; gap: 6px; min-width: 0; font-size: 13px; font-weight: 600; color: var(--mainText); }
+.labD__nm { font-style: normal; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labD__meta { font-size: 10.5px; color: var(--foreground); margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labD__live { color: var(--red); font-weight: 600; }
+.labD__score { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 13px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.labD__odds { display: contents; }
+.labD__odds .sb-odd { min-height: 30px; }
+.labD__odds .sb-odd__label { display: none; }
+
+/* ── E. Тикер ───────────────────────────────────────────────────────────── */
+.labE {
+  display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  background: var(--table); border: 1px solid rgba(59,89,106,0.55); border-radius: 12px;
+}
+.labE__tag {
+  flex: 0 0 auto; font-size: 11px; font-weight: 800; color: var(--bg);
+  background: var(--brand); padding: 6px 10px; border-radius: 8px;
+}
+.labE__track { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.labE__chip {
+  flex: 0 0 auto; display: flex; align-items: center; gap: 8px;
+  padding: 7px 11px; border-radius: 999px;
+  background: rgba(59,89,106,0.18); border: 1px solid rgba(59,89,106,0.4);
+  font-size: 12.5px; white-space: nowrap; transition: all .12s;
+}
+.labE__chip:hover { border-color: var(--brand); background: rgba(255,209,0,0.06); }
+.labE__names { color: var(--mainText); font-weight: 600; }
+.labE__names i { color: var(--foreground); font-style: normal; }
+.labE__sc { font-weight: 800; color: var(--secondText); font-variant-numeric: tabular-nums; }
+.labE__sc--live { color: var(--brand); }
+.labE__odds { display: flex; gap: 6px; }
+.labE__odds b { font-weight: 700; color: var(--headerText); font-variant-numeric: tabular-nums; }
+
+/* ── F. Табло 3 в ряд ───────────────────────────────────────────────────── */
+.labF { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px 14px 14px; }
+.labF__card {
+  display: flex; flex-direction: column; gap: 6px; padding: 10px 12px; border-radius: 12px;
+  background: rgba(255,220,69,0.05); border: 1px solid rgba(255,209,0,0.22);
+  transition: border-color .15s, transform .15s;
+}
+.labF__card:hover { border-color: var(--brand); transform: translateY(-2px); }
+.labF__head { display: flex; align-items: center; gap: 8px; }
+.labF__league { flex: 1; min-width: 0; font-size: 10.5px; color: var(--foreground); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labF__row { display: flex; align-items: center; gap: 8px; }
+.labF__name { flex: 1; min-width: 0; font-size: 13px; font-weight: 600; color: var(--mainText); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.labF__sc { font-size: 15px; font-weight: 800; color: var(--brand); font-variant-numeric: tabular-nums; }
+.labF__foot { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+.labF__when { flex: 0 0 auto; font-size: 10.5px; color: var(--secondText); }
+.labF__when--live { color: var(--red); font-weight: 600; }
+.labF__odds { flex: 1; display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+
+/* ── Телефон ────────────────────────────────────────────────────────────── */
+@media (max-width: 760px) {
+  .lab-main { padding: 14px 10px 60px; }
+  .lab-head__sub { display: none; }
+  .labB { grid-template-columns: 1fr; }
+  .labB__row-odds { grid-template-columns: repeat(3, 44px); }
+  /* плитки и табло на телефоне — та же горизонтальная карусель, что и у ленты:
+     шесть карточек в столбик съедают два экрана */
+  .labC, .labF {
+    display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory;
+    padding: 10px 12px 12px;
+  }
+  .labC__card, .labF__card { flex: 0 0 82%; scroll-snap-align: start; }
+  .labA__card { flex-basis: 82%; }
+  #v0 .sb-hot__list { display: flex; gap: 8px; padding: 10px 12px; overflow-x: auto; scroll-snap-type: x mandatory; }
+  #v0 .sb-hot__card { flex: 0 0 84%; scroll-snap-align: start; }
+  #v0 .sb-hot__team .sb-logo { width: 38px !important; height: 38px !important; }
+  .labD__cols, .labD__row { grid-template-columns: 18px 1fr 26px repeat(3, 44px); gap: 5px; padding-left: 8px; padding-right: 8px; }
+  .labD__teams span { font-size: 12px; }
+}
+
+.lab-item__flag {
+  font-size: 10.5px; font-weight: 700; vertical-align: middle; margin-left: 8px;
+  padding: 3px 8px; border-radius: 8px; background: var(--brand); color: var(--bg);
+}

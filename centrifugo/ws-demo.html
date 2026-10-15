@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Демо WS-дельт кэфов — Centrifugo</title>
+<style>
+  body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;margin:0;background:#f7f8f9;color:#0c0e12;padding:24px 20px}
+  .wrap{max-width:1400px;margin:0 auto}
+  h1{font-size:22px;margin:0 0 6px}
+  p.lede{color:#4d5560;margin:0 0 18px;font-size:14px;max-width:110ch}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+  select,input{font:inherit;padding:7px 10px;border:1px solid #c4cad3;border-radius:8px;background:#fff;max-width:520px}
+  select#event{min-width:360px}
+  button{font:inherit;padding:7px 14px;border:1px solid #c4cad3;border-radius:8px;background:#fff;cursor:pointer}
+  button.on{background:#2a78d6;color:#fff;border-color:#2a78d6}
+  .st{font-size:13px;color:#4d5560;font-variant-numeric:tabular-nums}
+  .st b{color:#0c0e12}
+  .dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:#c4cad3;margin-right:6px;vertical-align:middle}
+  .dot.ok{background:#0ca30c}.dot.bad{background:#d03b3b}
+  .subs{display:inline-flex;gap:6px;flex-wrap:wrap}
+  .sub{display:inline-flex;align-items:center;gap:6px;background:#eef3fb;color:#1f5fb0;border:1px solid #c9d9f2;border-radius:999px;padding:2px 9px;font-size:12px;cursor:pointer}
+  .sub:hover{background:#fde8e8;color:#b32d2d;border-color:#f0c4c4}
+  .cols{display:grid;grid-template-columns:3fr 2fr;gap:12px;align-items:start}
+  @media (max-width:900px){.cols{grid-template-columns:1fr}}
+  .col h2{font-size:13px;font-weight:650;letter-spacing:.06em;text-transform:uppercase;color:#8a929d;margin:0 0 6px}
+  pre#log{background:#fff;border:1px solid rgba(12,14,18,.1);border-radius:12px;padding:12px;font-size:12px;height:600px;overflow:auto;margin:0;white-space:pre-wrap;word-break:break-all}
+  .line{margin:0 0 4px}.line .t{color:#8a929d}.line .ch{color:#7c5cd6;font-weight:600}.line .k{color:#0d9488}
+  #human{background:#fff;border:1px solid rgba(12,14,18,.1);border-radius:12px;padding:10px 12px;height:600px;overflow:auto;font-size:12.5px}
+  .h{padding:7px 0;border-bottom:1px solid #eceff3}
+  .h .hd{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+  .h .t{color:#8a929d;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .h .ev{font-weight:650}
+  .h .ctx{color:#4d5560;font-size:11.5px}
+  .h .what{margin-top:2px}
+  .tag{display:inline-block;padding:0 7px;border-radius:999px;font-size:10.5px;font-weight:700;letter-spacing:.03em;margin-right:6px;vertical-align:middle}
+  .tag.e{background:#f3e8ff;color:#6b3fc7}.tag.m{background:#e6f5f1;color:#0d7a68}.tag.o{background:#e8f0fb;color:#1f5fb0}
+  .up{color:#0ca30c;font-weight:700}.down{color:#d03b3b;font-weight:700}.neutral{color:#0c0e12;font-weight:700}
+  .muted{color:#8a929d}
+  .bad{color:#d03b3b}
+  code{background:#f2f4f6;padding:1px 5px;border-radius:5px}
+</style>
+</head>
+<body><div class="wrap">
+  <h1>Демо WS-дельт кэфов</h1>
+  <p class="lede">Подключается к Centrifugo (<code id="url"></code>) без токена и подписывается на каналы
+    <code>sport:{sportId}</code> (дельты событий вида спорта) и <code>event:{eventId}</code> (событие, его маркеты и исходы).
+    Слева — сырой поток: сообщение = запись <code>data</code> AMQP-потока фида в конверте <code>{ch, k, d}</code>. Справа — расшифровка,
+    что именно изменилось (названия из <code>catalog.json</code> и снимка события, предыдущие значения — из уже полученных сообщений).
+    Обновления событий, в которых поднялась только версия <code>dv</code> или сдвинулся таймер матча, справа не показываются — считаются в «скрыто».</p>
+  <div class="row">
+    <span class="st"><span class="dot" id="dot"></span><span id="state">не подключено</span></span>
+    <button id="btn-conn">Подключить</button>
+    <label class="st">спорт: <select id="sport"><option value="">загрузка…</option></select></label>
+    <button id="btn-sport">Подписаться на sport</button>
+  </div>
+  <div class="row">
+    <label class="st">событие: <select id="event"><option value="">загрузка…</option></select></label>
+    <button id="btn-event">Подписаться на event</button>
+    <button id="btn-clear">Очистить</button>
+    <span class="st" id="cat-info">каталог: —</span>
+  </div>
+  <div class="row st">получено <b id="n">0</b> · за последние 10 с <b id="rate">0</b>/с · последнее <b id="last">—</b> · справа скрыто <b id="hid">0</b> <span class="muted">(<span id="hid-noop">0</span> только версия dv, <span id="hid-timer">0</span> тик таймера)</span> · подписки: <span class="subs" id="subs"><span class="muted">—</span></span></div>
+  <div class="cols">
+    <div class="col"><h2>Сырой поток</h2><pre id="log"></pre></div>
+    <div class="col"><h2>Что изменилось</h2><div id="human"></div></div>
+  </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/centrifuge@5.3.5/dist/centrifuge.js"></script>
+<script>
+(function(){
+  const url=(location.protocol==='https:'?'wss://':'ws://')+location.host+'/centrifugo/connection/websocket';
+  document.getElementById('url').textContent=url;
+  const $=id=>document.getElementById(id);
+  const log=$('log'),human=$('human'),dot=$('dot'),state=$('state');
+  const pad=n=>String(n).padStart(2,'0');
+  const ts=()=>{const d=new Date();return pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+'.'+String(d.getMilliseconds()).padStart(3,'0');};
+  const esc=s=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const EN=v=>v&&typeof v==='object'?(v.EN||v.RU||Object.values(v)[0]||''):(v==null?'':String(v));
+  let n=0,times=[],subs={};
+  // ---- справочники: каталог с сервера + то, что уже пролетело в потоке ----
+  let cat={sports:[],events:[],mtypes:{}};
+  const evInfo={};          // id → {n, tr, sp, sc, sv, stage, status}
+  const evLast={};          // id → последний полный объект события (для диффа полей)
+  const hiddenCnt={noop:0,timer:0};
+  const fmtIso=iso=>{if(!iso)return '—';const x=new Date(iso);if(isNaN(x))return String(iso);return x.getDate()+'.'+pad(x.getMonth()+1)+' '+pad(x.getHours())+':'+pad(x.getMinutes());};
+  function renderHidden(){$('hid').textContent=hiddenCnt.noop+hiddenCnt.timer;$('hid-noop').textContent=hiddenCnt.noop;$('hid-timer').textContent=hiddenCnt.timer;}
+  const mktInfo={};         // "ev:hash" → {n, p, type, period, value, open, removed}
+  const ocPrev={};          // ключ исхода → {price, status, result}
+  const EV_ST={0:'Created',1:'Open',2:'Suspended',3:'Ended'};
+  const STAGE={0:'Unknown',1:'Prematch',2:'Live'};
+  const OC_ST={0:'unknown',1:'open',2:'suspended',3:'ожидает расчёта',4:'рассчитан'};
+  const OC_RES={0:'',1:'Win',2:'Lose',3:'Return',4:'Return 25%',5:'Return 75%'};
+  function sportName(id){const s=cat.sports.find(x=>String(x.id)===String(id));return s?s.n:'sport '+id;}
+  function evLabel(id){const e=evInfo[id];return e&&e.n?e.n:'событие '+id;}
+  function evCtx(id){const e=evInfo[id]||{};return [e.sp!=null?sportName(e.sp):null,e.cat,e.tr].filter(Boolean).join(' · ');}
+  function score(d){try{const l=d.score&&d.score.list;const m=l&&(l['0']||l[0]);if(m&&m.length>=2)return m[0]+':'+m[1];}catch(e){}return null;}
+  // ---- вывод ----
+  function add(html){const el=document.createElement('div');el.className='line';el.innerHTML=html;log.prepend(el);while(log.childNodes.length>400)log.removeChild(log.lastChild);}
+  function note(msg){add('<span class="t">'+ts()+'</span> '+msg);}
+  function addHuman(tag,ev,what,ctx){const el=document.createElement('div');el.className='h';
+    el.innerHTML='<div class="hd"><span><span class="tag '+tag+'">'+({e:'событие',m:'маркет',o:'исход'}[tag])+'</span><span class="ev">'+esc(ev)+'</span></span><span class="t">'+ts()+'</span></div>'
+      +(ctx?'<div class="ctx">'+esc(ctx)+'</div>':'')+'<div class="what">'+what+'</div>';
+    human.prepend(el);while(human.childNodes.length>300)human.removeChild(human.lastChild);}
+  const arrow=(a,b,fmt)=>{fmt=fmt||(x=>x);if(a==null||a===b)return '<b>'+esc(fmt(b))+'</b>';return '<span class="muted">'+esc(fmt(a))+'</span> → <b>'+esc(fmt(b))+'</b>';};
+  // ---- расшифровка ----
+  function decode(d){
+    const k=d.k||'',ch=d.ch,o=d.d||{},parts=k.split(':');
+    if(ch==='events'){const id=parts[parts.length-1],sp=parts[1];const prev=evInfo[id]||{};
+      if(d.d===null){delete evLast[id];addHuman('e',evLabel(id),'<span class="bad">удалено из линии</span> — ключ активного события пропал из Redis (аномалия фида, пометил сборщик)',evCtx(id));return;}
+      const last=evLast[id];const nm=EN(o.name)||prev.n;const sc=score(o);
+      // Полный дифф с предыдущим сообщением по этому событию. Фид шлёт много «пустых» обновлений:
+      // только dv/edv/uts (ни одно видимое поле не изменилось) и тики таймера матча (timer_v/timer_t/sdv);
+      // в правый список они не попадают, а считаются в «скрыто».
+      const bits=[];let hidden=null;
+      const stNew=o.statusv2||EV_ST[o.status]||String(o.status);
+      const stOld=last?(last.statusv2||EV_ST[last.status]||String(last.status)):(prev.sv||(prev.status!=null?EV_ST[prev.status]:null));
+      if(!last&&prev.n==null){bits.push('состояние: <b>'+esc(STAGE[o.stage]||o.stage)+' / '+esc(stNew)+'</b>'+(sc?', счёт <b>'+esc(sc)+'</b>':''));}
+      else{
+        if(stOld!=null&&stOld!==stNew)bits.push('статус '+arrow(stOld,stNew));
+        const stgOld=last?last.stage:prev.stage;if(stgOld!=null&&stgOld!==o.stage)bits.push('стадия '+arrow(STAGE[stgOld]||stgOld,STAGE[o.stage]||o.stage));
+        const scOld=last?score(last):prev.sc;if(sc&&sc!==scOld)bits.push('счёт '+arrow(scOld,sc));
+        if(last){const ls=last.score||{},ns=o.score||{};
+          if(ls.stage!=null&&ns.stage!=null&&ls.stage!==ns.stage)bits.push('период счёта '+arrow(ls.stage,ns.stage));
+          if((last.start||'')!==(o.start||''))bits.push('начало '+arrow(fmtIso(last.start),fmtIso(o.start)));
+          if(!last.link&&o.link)bits.push('появилась ссылка на трансляцию');
+          if(EN(last.name)!==EN(o.name))bits.push('переименовано '+arrow(EN(last.name),EN(o.name)));
+          if(!bits.length){const tick=(ls.timer_v!==ns.timer_v)||(ls.timer_t!==ns.timer_t)||(ls.timer_d!==ns.timer_d);hidden=tick?'timer':'noop';}}
+        else if(!bits.length)hidden='noop';}
+      if(o.removed)bits.push('<span class="bad">удалено из линии</span>');
+      evLast[id]=o;
+      evInfo[id]=Object.assign({},prev,{n:nm,sp:prev.sp!=null?prev.sp:sp,sc:sc||prev.sc,sv:o.statusv2,stage:o.stage,status:o.status,cat:prev.cat||EN(o.cname)});
+      if(hidden&&!o.removed){hiddenCnt[hidden]++;renderHidden();return;}
+      bits.push('<span class="muted">dv '+esc(o.dv)+'</span>');
+      addHuman('e',nm||('событие '+id),bits.join(' · '),evCtx(id));
+    }else if(ch==='markets'){const ev=parts[1],h=parts[2],key=ev+':'+h;const prev=mktInfo[key]||{};
+      const nm=EN(o.name)||prev.n,p=EN(o.period_name)||prev.p,val=o.value||'';
+      const title=nm+(p?' ('+p+')':'')+(val?' '+val:'');
+      const bits=[];
+      if(prev.open==null)bits.push('маркет '+(o.open?'<b>открыт</b>':'<b>закрыт</b>')+' для ставок');
+      else if(prev.open!==!!o.open)bits.push(arrow(prev.open?'открыт':'закрыт',o.open?'открыт':'закрыт'));
+      else bits.push('<span class="muted">без смены статуса ('+(o.open?'открыт':'закрыт')+')</span>');
+      if(o.removed)bits.push('<span class="bad">маркет удалён</span>');
+      bits.push('<span class="muted">ver '+esc(o.ver)+(o.rver?' rver '+esc(o.rver):'')+'</span>');
+      mktInfo[key]={n:nm,p:p,type:o.type,period:o.period,value:val,open:!!o.open,removed:!!o.removed};
+      addHuman('m',title,bits.join(' · '),evLabel(ev)+(evCtx(ev)?' · '+evCtx(ev):''));
+    }else if(ch==='outcomes'){const ev=parts[1],h=parts[2],ocId=parts.slice(3).join(':');const m=mktInfo[ev+':'+h];const prev=ocPrev[k]||{};
+      // имя маркета известно только из уже пришедшего сообщения markets (в исходе есть лишь хэш);
+      // если маркет пришёл без имени — подставляем название типа из справочника catalog.mtypes
+      let mname=null;
+      if(m){const e=evInfo[ev];const mt=e&&cat.mtypes[String(e.sp)]&&cat.mtypes[String(e.sp)][String(m.type)];
+        mname=(m.n||(mt&&mt.n)||('тип '+m.type))+(m.p?' ('+m.p+')':'')+(m.value?' '+m.value:'');}
+      const oname=EN(o.name)||('исход '+ocId);
+      const bits=[];
+      const price=o.price!=null?Number(o.price):null;
+      if(price!=null){if(prev.price==null)bits.push('кэф <b>'+price.toFixed(2)+'</b>');
+        else if(prev.price!==price)bits.push('кэф <span class="muted">'+prev.price.toFixed(2)+'</span> → <span class="'+(price>prev.price?'up':'down')+'">'+price.toFixed(2)+(price>prev.price?' ▲':' ▼')+'</span>');
+        else bits.push('кэф <b>'+price.toFixed(2)+'</b> (без изменения)');}
+      if(prev.status==null||prev.status!==o.status)bits.push('статус '+arrow(prev.status!=null?OC_ST[prev.status]:null,OC_ST[o.status]||o.status));
+      if(o.status===4||o.result)bits.push('результат <b>'+esc(OC_RES[o.result]||o.result)+'</b>');
+      if(o.cancelled)bits.push('<span class="bad">расчёт отменён</span>');
+      if(o.removed)bits.push('<span class="bad">исход удалён</span>');
+      ocPrev[k]={price:price,status:o.status,result:o.result};
+      addHuman('o',oname+(o.value?' '+o.value:''),bits.join(' · '),evLabel(ev)+' · '+(mname||'маркет '+h.slice(0,8)+'… (тип ещё не пришёл)'));
+    }
+  }
+  function onPub(ch,ctx){n++;const now=Date.now();times.push(now);while(times.length&&times[0]<now-10000)times.shift();
+    $('n').textContent=n;$('rate').textContent=(times.length/10).toFixed(1);$('last').textContent=ts();
+    const d=ctx.data||{};const obj=d.d||{};
+    let brief='';
+    if(d.ch==='outcomes')brief='price='+obj.price+' status='+obj.status+(obj.result?' result='+obj.result:'')+(obj.removed?' removed':'');
+    else if(d.ch==='markets')brief='open='+obj.open+' ver='+obj.ver+(obj.removed?' removed':'')+' type='+obj.type+'/'+obj.period+(obj.value?' '+obj.value:'');
+    else if(d.ch==='events')brief='stage='+obj.stage+' status='+obj.status+' ('+obj.statusv2+') dv='+obj.dv+(score(obj)?' score='+score(obj):'');
+    add('<span class="t">'+ts()+'</span> <span class="ch">'+ch+'</span> '+(d.ch||'?')+' <span class="k">'+esc(d.k||'')+'</span> '+esc(brief));
+    try{decode(d);}catch(e){addHuman('e','?','<span class="bad">не удалось расшифровать: '+esc(e.message)+'</span>','');}}
+  // ---- каталог и выпадашки ----
+  function fillSports(){const sel=$('sport'),cur=sel.value||'1';sel.innerHTML='';
+    cat.sports.slice().sort((a,b)=>a.n.localeCompare(b.n)).forEach(s=>{const o=document.createElement('option');o.value=s.id;o.textContent=s.n+' ('+s.id+')';sel.appendChild(o);});
+    sel.value=cur;if(!sel.value&&sel.options.length)sel.selectedIndex=0;}
+  function fillEvents(){const sel=$('event'),cur=sel.value,sp=$('sport').value;sel.innerHTML='';
+    const evs=cat.events.filter(e=>String(e.sp)===sp);
+    const live=evs.filter(e=>e.stage===2),pre=evs.filter(e=>e.stage!==2);
+    const grp=(label,list,fmt)=>{if(!list.length)return;const g=document.createElement('optgroup');g.label=label+' ('+list.length+')';list.forEach(e=>{const o=document.createElement('option');o.value=e.id;o.textContent=fmt(e);g.appendChild(o);});sel.appendChild(g);};
+    const hm=iso=>{if(!iso)return '';const d=new Date(iso);return pad(d.getHours())+':'+pad(d.getMinutes());};
+    grp('LIVE',live,e=>(e.sc?e.sc+' · ':'')+e.n+' · '+(e.tr||''));
+    grp('Скоро (prematch, 12 ч)',pre,e=>hm(e.st)+' · '+e.n+' · '+(e.tr||''));
+    if(!sel.options.length){const o=document.createElement('option');o.value='';o.textContent='событий нет';sel.appendChild(o);}
+    sel.value=cur;if(!sel.value&&sel.options.length)sel.selectedIndex=0;}
+  async function loadCatalog(){try{const r=await fetch('catalog.json?'+Date.now(),{cache:'no-store'});cat=await r.json();
+      cat.events.forEach(e=>{const p=evInfo[e.id]||{};evInfo[e.id]=Object.assign(p,{n:p.n||e.n,tr:e.tr,cat:e.cat,sp:e.sp,sc:p.sc||e.sc,sv:p.sv||e.sv,stage:p.stage!=null?p.stage:e.stage,status:p.status!=null?p.status:e.status});});
+      fillSports();fillEvents();const d=new Date(cat.t*1000);
+      $('cat-info').textContent='каталог: '+cat.sports.length+' видов спорта, '+cat.events.length+' событий, обновлён '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+    }catch(e){$('cat-info').textContent='каталог: не загрузился ('+e.message+')';}}
+  $('sport').addEventListener('change',fillEvents);
+  loadCatalog();setInterval(loadCatalog,60000);
+  // ---- centrifugo ----
+  const cf=new Centrifuge(url);
+  cf.on('connecting',c=>{dot.className='dot';state.textContent='подключение… ('+c.code+' '+c.reason+')';});
+  cf.on('connected',c=>{dot.className='dot ok';state.textContent='подключено, транспорт '+c.transport;note('connected: client '+c.client);});
+  cf.on('disconnected',c=>{dot.className='dot bad';state.textContent='отключено ('+c.code+' '+c.reason+')';note('disconnected: '+c.code+' '+c.reason);});
+  cf.on('error',e=>{note('<b class="bad">error</b> '+esc(JSON.stringify(e.error||e)));});
+  let connected=false;
+  $('btn-conn').onclick=function(){if(!connected){cf.connect();connected=true;this.textContent='Отключить';this.className='on';}else{cf.disconnect();connected=false;this.textContent='Подключить';this.className='';}};
+  function renderSubs(){const box=$('subs');box.innerHTML='';const keys=Object.keys(subs);if(!keys.length){box.innerHTML='<span class="muted">—</span>';return;}
+    keys.forEach(ch=>{const b=document.createElement('span');b.className='sub';b.title='отписаться';let lbl=ch;const m=ch.match(/^event:(\d+)$/);if(m)lbl='event:'+m[1]+' · '+evLabel(m[1]);const s=ch.match(/^sport:(\d+)$/);if(s)lbl='sport:'+s[1]+' · '+sportName(s[1]);
+      b.innerHTML=esc(lbl)+' <b>×</b>';b.onclick=()=>toggle(ch);box.appendChild(b);});}
+  // снимок маркетов/исходов события (snap/{id}.json пишет сборщик раз в минуту): имена маркетов и
+  // исходные кэфы известны сразу, а не после первого сообщения markets — так же будет работать
+  // реальный клиент: снимок из базы, затем дельты по WS
+  async function loadSnap(ev){try{const r=await fetch('snap/'+ev+'.json?'+Date.now(),{cache:'no-store'});if(!r.ok){note('<span class="muted">снимок для '+ev+' не найден (событие не live и не стартует в ближайший час)</span>');return;}
+      const s=await r.json();let nm=0,no=0;
+      (s.markets||[]).forEach(m=>{const key=ev+':'+m.h;const prev=mktInfo[key]||{};mktInfo[key]={n:prev.n||m.n,p:prev.p||m.p,type:m.type,period:m.period,value:m.v,open:prev.open!=null?prev.open:!!m.open,removed:false};nm++;
+        (m.oc||[]).forEach(o=>{const k='o:'+ev+':'+m.h+':'+o.h;if(!ocPrev[k]){ocPrev[k]={price:o.price,status:o.status};no++;}});});
+      if(s.ev&&!evInfo[ev])evInfo[ev]={n:s.ev.n,tr:s.ev.tr,cat:s.ev.cat,sp:s.ev.sp,sc:s.ev.sc,sv:s.ev.sv,stage:s.ev.stage,status:s.ev.status};
+      const d=new Date(s.t*1000);note('снимок '+ev+': <b>'+nm+'</b> маркетов, <b>'+no+'</b> исходов (на '+pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds())+')');
+    }catch(e){note('<span class="bad">снимок '+ev+' не загрузился: '+esc(e.message)+'</span>');}}
+  function toggle(ch){if(subs[ch]){subs[ch].unsubscribe();cf.removeSubscription(subs[ch]);delete subs[ch];note('unsubscribed '+ch);}
+    else{const s=cf.newSubscription(ch);s.on('publication',ctx=>onPub(ch,ctx));
+      const m=ch.match(/^event:(\d+)$/);if(m)loadSnap(m[1]);
+      s.on('subscribed',c=>note('subscribed <span class="ch">'+ch+'</span>'+(c.recovered?' (recovered)':'')));
+      s.on('unsubscribed',c=>note('unsubscribed '+ch+' '+c.code+' '+c.reason));s.on('error',e=>note('<b class="bad">sub error</b> '+ch+' '+esc(JSON.stringify(e.error||e))));
+      s.subscribe();subs[ch]=s;}
+    renderSubs();}
+  $('btn-sport').onclick=()=>{const v=$('sport').value;if(v)toggle('sport:'+v);};
+  $('btn-event').onclick=()=>{const v=$('event').value;if(v)toggle('event:'+v);};
+  $('btn-clear').onclick=()=>{log.innerHTML='';human.innerHTML='';n=0;times=[];$('n').textContent='0';};
+})();
+</script>
+</body></html>
